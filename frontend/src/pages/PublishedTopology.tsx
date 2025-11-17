@@ -23,7 +23,9 @@ export default function PublishedTopology() {
         const next = code.toLowerCase();
         const current = params.siteCode || "";
         if (current !== next) {
-          navigate(`/topology/${next}`, { replace: params.siteCode === undefined });
+          navigate(`/topology/${next}`, {
+            replace: params.siteCode === undefined,
+          });
         }
       }}
     />

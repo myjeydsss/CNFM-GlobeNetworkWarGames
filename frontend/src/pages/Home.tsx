@@ -226,7 +226,11 @@ export default function Home() {
               Toggle themes, inspect services, and publish updates in seconds.
             </p>
           </div>
-          <button type="button" className="home-cta primary" onClick={handleLaunchViewer}>
+          <button
+            type="button"
+            className="home-cta primary"
+            onClick={handleLaunchViewer}
+          >
             Launch viewer
           </button>
         </section>

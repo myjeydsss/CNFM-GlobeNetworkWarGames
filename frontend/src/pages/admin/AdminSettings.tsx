@@ -368,9 +368,9 @@ export default function AdminSettings() {
         >
           <form className="modal-form" onSubmit={handleSubmit}>
             <label className="floating-input full-row with-toggle">
-             <span>Current password</span>
-             <input
-               id="currentPassword"
+              <span>Current password</span>
+              <input
+                id="currentPassword"
                 type={passwordVisibility.current ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}

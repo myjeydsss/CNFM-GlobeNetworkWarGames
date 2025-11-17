@@ -582,7 +582,6 @@ export default function AdminTopologyViewer({
   const [siteOptions, setSiteOptions] = useState<SiteSummary[]>([]);
   const [selectedSiteCode, setSelectedSiteCode] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<SiteTopology | null>(null);
-  const [siteRefreshKey, setSiteRefreshKey] = useState(0);
   const [flow, setFlow] = useState<FlowBundle>({ nodes: [], edges: [] });
   const [services, setServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -642,12 +641,6 @@ export default function AdminTopologyViewer({
   }, []);
 
   useEffect(() => {
-    const handler = () => setSiteRefreshKey((key) => key + 1);
-    window.addEventListener("cnfm-sites-refresh", handler);
-    return () => window.removeEventListener("cnfm-sites-refresh", handler);
-  }, []);
-
-  useEffect(() => {
     (async () => {
       try {
         const summaries = await fetchSiteSummaries();
@@ -682,7 +675,7 @@ export default function AdminTopologyViewer({
         });
       }
     })();
-  }, [normalizedInitial, fetchSiteSummaries, isAdminMode, isSuperAdmin, siteRefreshKey]);
+  }, [normalizedInitial, fetchSiteSummaries, isAdminMode, isSuperAdmin]);
 
   useEffect(() => {
     if (normalizedInitial && normalizedInitial !== selectedSiteCode) {
@@ -1308,23 +1301,26 @@ export default function AdminTopologyViewer({
               </>
             ) : (
               <div className="viewer-summary-stack">
-                {selectedSiteOption ? (
-                  <div className="viewer-assignment-pill" role="text">
-                    <span className="site-name">{selectedSiteOption.name}</span>
-                    <span className="site-separator" aria-hidden>
-                      •
-                    </span>
-                    <span className="site-region">
-                      {selectedSiteOption.regionName ||
-                        selectedSiteOption.regionCode ||
-                        "Unassigned region"}
-                    </span>
-                  </div>
-                ) : (
-                  <p className="viewer-site-hint">
-                    No site has been assigned to your account yet.
-                  </p>
-                )}
+                <div className="editor-site-summary-card">
+                  <p className="editor-site-label">Assigned site</p>
+                  {selectedSiteOption ? (
+                    <p className="editor-site-summary">
+                      <span className="code">{selectedSiteOption.name}</span>
+                      <span className="separator" aria-hidden>
+                        •
+                      </span>
+                      <span className="region">
+                        {selectedSiteOption.regionName ||
+                          selectedSiteOption.regionCode ||
+                          "Unassigned region"}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="editor-site-hint">
+                      No site has been assigned to your account yet.
+                    </p>
+                  )}
+                </div>
                 <div className="viewer-status-group">
                   {loading && <span className="viewer-status">Loading…</span>}
                   {error && (

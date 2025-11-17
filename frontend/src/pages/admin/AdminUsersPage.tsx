@@ -125,10 +125,7 @@ export default function AdminUsersPage() {
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     return users.filter((user) => {
-      if (
-        currentUser?.role === "super_admin" &&
-        currentUser.id === user.id
-      ) {
+      if (currentUser?.role === "super_admin" && currentUser.id === user.id) {
         return false;
       }
       if (!term) return true;

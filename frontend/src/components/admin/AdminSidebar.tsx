@@ -120,25 +120,43 @@ export default function AdminSidebar({ user, onLogout }: Props) {
       root.style.setProperty("--viewer-select-bg", "#f1f5f9");
       root.style.setProperty("--viewer-select-text", "#0f172a");
       root.style.setProperty("--viewer-select-border", "rgba(148,163,184,.45)");
-      root.style.setProperty("--viewer-select-shadow", "0 4px 12px rgba(15,23,42,.08)");
+      root.style.setProperty(
+        "--viewer-select-shadow",
+        "0 4px 12px rgba(15,23,42,.08)"
+      );
       root.style.setProperty("--viewer-canvas-bg", "#ffffff");
       root.style.setProperty("--viewer-canvas-border", "rgba(148,163,184,.35)");
-      root.style.setProperty("--viewer-canvas-shadow", "0 24px 48px rgba(15,23,42,.12)");
+      root.style.setProperty(
+        "--viewer-canvas-shadow",
+        "0 24px 48px rgba(15,23,42,.12)"
+      );
       root.style.setProperty("--viewer-bg", "#f5f7fb");
       root.style.setProperty("--viewer-text", "#0f172a");
       root.style.setProperty("--viewer-panel-bg", "#ffffff");
       root.style.setProperty("--viewer-panel-border", "rgba(203,213,225,.7)");
-      root.style.setProperty("--viewer-panel-shadow", "0 16px 28px rgba(15,23,42,.08)");
+      root.style.setProperty(
+        "--viewer-panel-shadow",
+        "0 16px 28px rgba(15,23,42,.08)"
+      );
       root.style.setProperty("--viewer-legend-bg", "rgba(15,23,42,.06)");
       root.style.setProperty("--viewer-legend-border", "rgba(148,163,184,.4)");
       root.style.setProperty("--viewer-legend-text", "#475569");
-      root.style.setProperty("--viewer-legend-shadow", "0 8px 18px rgba(15,23,42,.08)");
+      root.style.setProperty(
+        "--viewer-legend-shadow",
+        "0 8px 18px rgba(15,23,42,.08)"
+      );
       root.style.setProperty("--viewer-btn-ghost-bg", "#f8fafc");
       root.style.setProperty("--viewer-btn-ghost-hover", "#e2e8f0");
       root.style.setProperty("--viewer-btn-ghost-active", "#cbd5f5");
       root.style.setProperty("--viewer-btn-ghost-text", "#0f172a");
-      root.style.setProperty("--viewer-btn-ghost-border", "rgba(148,163,184,.45)");
-      root.style.setProperty("--viewer-btn-ghost-shadow", "0 8px 18px rgba(15,23,42,.08)");
+      root.style.setProperty(
+        "--viewer-btn-ghost-border",
+        "rgba(148,163,184,.45)"
+      );
+      root.style.setProperty(
+        "--viewer-btn-ghost-shadow",
+        "0 8px 18px rgba(15,23,42,.08)"
+      );
       root.style.setProperty(
         "--viewer-btn-ghost-shadow-hover",
         "0 12px 24px rgba(15,23,42,.12)"
@@ -147,7 +165,10 @@ export default function AdminSidebar({ user, onLogout }: Props) {
         "--viewer-btn-ghost-shadow-active",
         "0 6px 14px rgba(15,23,42,.1)"
       );
-      root.style.setProperty("--viewer-btn-ghost-inactive-bg", "rgba(148,163,184,.18)");
+      root.style.setProperty(
+        "--viewer-btn-ghost-inactive-bg",
+        "rgba(148,163,184,.18)"
+      );
       root.style.setProperty("--viewer-btn-ghost-inactive-text", "#475569");
       root.style.setProperty("--viewer-status-color", "#475569");
       root.style.setProperty("--viewer-empty-color", "#475569");
@@ -155,16 +176,40 @@ export default function AdminSidebar({ user, onLogout }: Props) {
         "--viewer-empty-bg",
         "linear-gradient(180deg, rgba(241,245,249,.8), rgba(241,245,249,.6))"
       );
-      root.style.setProperty("--viewer-hovercard-shadow", "0 18px 38px rgba(15,23,42,.15)");
-      root.style.setProperty("--viewer-analysis-border", "rgba(226,232,240,.9)");
-      root.style.setProperty("--viewer-analysis-shadow", "0 12px 26px rgba(15,23,42,.12)");
+      root.style.setProperty(
+        "--viewer-hovercard-shadow",
+        "0 18px 38px rgba(15,23,42,.15)"
+      );
+      root.style.setProperty(
+        "--viewer-analysis-border",
+        "rgba(226,232,240,.9)"
+      );
+      root.style.setProperty(
+        "--viewer-analysis-shadow",
+        "0 12px 26px rgba(15,23,42,.12)"
+      );
       root.style.setProperty("--viewer-minimap-bg", "rgba(248,250,252,.95)");
-      root.style.setProperty("--viewer-minimap-border", "rgba(148,163,184,.35)");
-      root.style.setProperty("--viewer-minimap-shadow", "0 12px 26px rgba(15,23,42,.12)");
+      root.style.setProperty(
+        "--viewer-minimap-border",
+        "rgba(148,163,184,.35)"
+      );
+      root.style.setProperty(
+        "--viewer-minimap-shadow",
+        "0 12px 26px rgba(15,23,42,.12)"
+      );
       root.style.setProperty("--viewer-controls-bg", "rgba(248,250,252,.95)");
-      root.style.setProperty("--viewer-controls-border", "rgba(148,163,184,.35)");
-      root.style.setProperty("--viewer-controls-shadow", "0 12px 26px rgba(15,23,42,.12)");
-      root.style.setProperty("--viewer-controls-divider", "rgba(148,163,184,.25)");
+      root.style.setProperty(
+        "--viewer-controls-border",
+        "rgba(148,163,184,.35)"
+      );
+      root.style.setProperty(
+        "--viewer-controls-shadow",
+        "0 12px 26px rgba(15,23,42,.12)"
+      );
+      root.style.setProperty(
+        "--viewer-controls-divider",
+        "rgba(148,163,184,.25)"
+      );
       root.style.setProperty("--editor-shell-bg", "#f3f5fb");
       root.style.setProperty("--editor-text", "#0f172a");
       root.style.setProperty("--editor-muted", "#64748b");
@@ -176,22 +221,40 @@ export default function AdminSidebar({ user, onLogout }: Props) {
       root.style.setProperty("--editor-accent-alt", "#1d4ed8");
       root.style.setProperty("--editor-status-color", "#94a3b8");
       root.style.setProperty("--editor-canvas-border", "rgba(148,163,184,.35)");
-      root.style.setProperty("--editor-canvas-shadow", "0 24px 48px rgba(15,23,42,.12)");
-      root.style.setProperty("--editor-btn-shadow", "0 8px 16px rgba(15,23,42,.08)");
-      root.style.setProperty("--editor-btn-shadow-hover", "0 12px 22px rgba(15,23,42,.12)");
-      root.style.setProperty("--editor-btn-shadow-active", "0 6px 14px rgba(15,23,42,.1)");
+      root.style.setProperty(
+        "--editor-canvas-shadow",
+        "0 24px 48px rgba(15,23,42,.12)"
+      );
+      root.style.setProperty(
+        "--editor-btn-shadow",
+        "0 8px 16px rgba(15,23,42,.08)"
+      );
+      root.style.setProperty(
+        "--editor-btn-shadow-hover",
+        "0 12px 22px rgba(15,23,42,.12)"
+      );
+      root.style.setProperty(
+        "--editor-btn-shadow-active",
+        "0 6px 14px rgba(15,23,42,.1)"
+      );
       root.style.setProperty("--editor-form-bg", "#f8fafc");
       root.style.setProperty("--editor-form-border", "rgba(148,163,184,.35)");
       root.style.setProperty("--editor-form-text", "#0f172a");
       root.style.setProperty("--editor-detail-muted", "#64748b");
       root.style.setProperty("--editor-switch-text", "#475569");
       root.style.setProperty("--editor-load-chip-bg", "rgba(37,99,235,.08)");
-      root.style.setProperty("--editor-load-chip-border", "rgba(59,130,246,.35)");
+      root.style.setProperty(
+        "--editor-load-chip-border",
+        "rgba(59,130,246,.35)"
+      );
       root.style.setProperty("--editor-load-chip-text", "#1d4ed8");
       root.style.setProperty("--editor-load-chip-remove", "#dc2626");
       root.style.setProperty("--editor-load-chip-remove-hover", "#b91c1c");
       root.style.setProperty("--editor-add-load-bg", "#ffffff");
-      root.style.setProperty("--editor-add-load-border", "rgba(148,163,184,.35)");
+      root.style.setProperty(
+        "--editor-add-load-border",
+        "rgba(148,163,184,.35)"
+      );
       root.style.setProperty("--editor-add-load-text", "#0f172a");
       root.style.setProperty("--editor-detail-hint", "#64748b");
       root.style.setProperty("--editor-detail-empty", "#475569");
@@ -202,7 +265,10 @@ export default function AdminSidebar({ user, onLogout }: Props) {
       root.style.setProperty("--editor-empty-text", "#475569");
       root.style.setProperty("--editor-empty-border", "rgba(148,163,184,.35)");
       root.style.setProperty("--editor-empty-panel", "#ffffff");
-      root.style.setProperty("--editor-empty-shadow", "0 20px 40px rgba(15,23,42,.12)");
+      root.style.setProperty(
+        "--editor-empty-shadow",
+        "0 20px 40px rgba(15,23,42,.12)"
+      );
       root.style.setProperty("--viewer-card-bg", "#ffffff");
       root.style.setProperty("--viewer-card-border", "rgba(226,232,240,.9)");
       root.style.setProperty("--viewer-card-title", "#b91c1c");
@@ -291,10 +357,16 @@ export default function AdminSidebar({ user, onLogout }: Props) {
       root.style.setProperty("--viewer-select-bg", "rgba(15,23,42,.65)");
       root.style.setProperty("--viewer-select-text", "#e2e8f0");
       root.style.setProperty("--viewer-select-border", "rgba(96,165,250,.35)");
-      root.style.setProperty("--viewer-select-shadow", "0 10px 24px rgba(7,12,22,.45)");
+      root.style.setProperty(
+        "--viewer-select-shadow",
+        "0 10px 24px rgba(7,12,22,.45)"
+      );
       root.style.setProperty("--viewer-canvas-bg", "rgba(7,12,22,.92)");
       root.style.setProperty("--viewer-canvas-border", "rgba(59,130,246,.25)");
-      root.style.setProperty("--viewer-canvas-shadow", "0 30px 60px rgba(7,11,19,.6)");
+      root.style.setProperty(
+        "--viewer-canvas-shadow",
+        "0 30px 60px rgba(7,11,19,.6)"
+      );
       root.style.setProperty("--viewer-bg", "#071426");
       root.style.setProperty("--viewer-text", "#e2e8f0");
       root.style.setProperty("--viewer-panel-bg", "rgba(15,23,42,.72)");
@@ -306,13 +378,25 @@ export default function AdminSidebar({ user, onLogout }: Props) {
       root.style.setProperty("--viewer-legend-bg", "rgba(15,23,42,.7)");
       root.style.setProperty("--viewer-legend-border", "rgba(96,165,250,.25)");
       root.style.setProperty("--viewer-legend-text", "rgba(191,219,254,.82)");
-      root.style.setProperty("--viewer-legend-shadow", "0 8px 18px rgba(7,12,22,.4)");
+      root.style.setProperty(
+        "--viewer-legend-shadow",
+        "0 8px 18px rgba(7,12,22,.4)"
+      );
       root.style.setProperty("--viewer-btn-ghost-bg", "rgba(15,23,42,.65)");
       root.style.setProperty("--viewer-btn-ghost-hover", "rgba(30,41,59,.75)");
       root.style.setProperty("--viewer-btn-ghost-active", "rgba(30,41,59,.9)");
-      root.style.setProperty("--viewer-btn-ghost-text", "rgba(191,219,254,.85)");
-      root.style.setProperty("--viewer-btn-ghost-border", "rgba(96,165,250,.4)");
-      root.style.setProperty("--viewer-btn-ghost-shadow", "0 8px 18px rgba(7,12,22,.35)");
+      root.style.setProperty(
+        "--viewer-btn-ghost-text",
+        "rgba(191,219,254,.85)"
+      );
+      root.style.setProperty(
+        "--viewer-btn-ghost-border",
+        "rgba(96,165,250,.4)"
+      );
+      root.style.setProperty(
+        "--viewer-btn-ghost-shadow",
+        "0 8px 18px rgba(7,12,22,.35)"
+      );
       root.style.setProperty(
         "--viewer-btn-ghost-shadow-hover",
         "0 12px 26px rgba(7,12,22,.45)"
@@ -321,24 +405,54 @@ export default function AdminSidebar({ user, onLogout }: Props) {
         "--viewer-btn-ghost-shadow-active",
         "0 6px 16px rgba(7,12,22,.4)"
       );
-      root.style.setProperty("--viewer-btn-ghost-inactive-bg", "rgba(148,163,184,.18)");
-      root.style.setProperty("--viewer-btn-ghost-inactive-text", "rgba(148,163,184,.7)");
+      root.style.setProperty(
+        "--viewer-btn-ghost-inactive-bg",
+        "rgba(148,163,184,.18)"
+      );
+      root.style.setProperty(
+        "--viewer-btn-ghost-inactive-text",
+        "rgba(148,163,184,.7)"
+      );
       root.style.setProperty("--viewer-status-color", "rgba(148,163,184,.6)");
       root.style.setProperty("--viewer-empty-color", "rgba(191,219,254,.75)");
       root.style.setProperty(
         "--viewer-empty-bg",
         "linear-gradient(180deg, rgba(7,12,22,.78), rgba(7,12,22,.64))"
       );
-      root.style.setProperty("--viewer-hovercard-shadow", "0 18px 38px rgba(7,11,19,.6)");
-      root.style.setProperty("--viewer-analysis-border", "rgba(148,163,184,.25)");
-      root.style.setProperty("--viewer-analysis-shadow", "0 10px 20px rgba(15,23,42,.35)");
+      root.style.setProperty(
+        "--viewer-hovercard-shadow",
+        "0 18px 38px rgba(7,11,19,.6)"
+      );
+      root.style.setProperty(
+        "--viewer-analysis-border",
+        "rgba(148,163,184,.25)"
+      );
+      root.style.setProperty(
+        "--viewer-analysis-shadow",
+        "0 10px 20px rgba(15,23,42,.35)"
+      );
       root.style.setProperty("--viewer-minimap-bg", "rgba(15,23,42,.72)");
-      root.style.setProperty("--viewer-minimap-border", "rgba(148,163,184,.25)");
-      root.style.setProperty("--viewer-minimap-shadow", "0 12px 28px rgba(15,23,42,.35)");
+      root.style.setProperty(
+        "--viewer-minimap-border",
+        "rgba(148,163,184,.25)"
+      );
+      root.style.setProperty(
+        "--viewer-minimap-shadow",
+        "0 12px 28px rgba(15,23,42,.35)"
+      );
       root.style.setProperty("--viewer-controls-bg", "rgba(15,23,42,.72)");
-      root.style.setProperty("--viewer-controls-border", "rgba(148,163,184,.25)");
-      root.style.setProperty("--viewer-controls-shadow", "0 12px 28px rgba(15,23,42,.35)");
-      root.style.setProperty("--viewer-controls-divider", "rgba(148,163,184,.16)");
+      root.style.setProperty(
+        "--viewer-controls-border",
+        "rgba(148,163,184,.25)"
+      );
+      root.style.setProperty(
+        "--viewer-controls-shadow",
+        "0 12px 28px rgba(15,23,42,.35)"
+      );
+      root.style.setProperty(
+        "--viewer-controls-divider",
+        "rgba(148,163,184,.16)"
+      );
       root.style.setProperty(
         "--editor-shell-bg",
         "radial-gradient(circle at top left, rgba(59,130,246,.12), transparent 55%), #071426"
@@ -353,22 +467,43 @@ export default function AdminSidebar({ user, onLogout }: Props) {
       root.style.setProperty("--editor-accent-alt", "#1d4ed8");
       root.style.setProperty("--editor-status-color", "rgba(148,163,184,.6)");
       root.style.setProperty("--editor-canvas-border", "rgba(59,130,246,.25)");
-      root.style.setProperty("--editor-canvas-shadow", "0 30px 60px rgba(7,11,19,.6)");
-      root.style.setProperty("--editor-btn-shadow", "0 8px 18px rgba(37,99,235,.15)");
-      root.style.setProperty("--editor-btn-shadow-hover", "0 12px 28px rgba(37,99,235,.2)");
-      root.style.setProperty("--editor-btn-shadow-active", "0 6px 16px rgba(37,99,235,.18)");
+      root.style.setProperty(
+        "--editor-canvas-shadow",
+        "0 30px 60px rgba(7,11,19,.6)"
+      );
+      root.style.setProperty(
+        "--editor-btn-shadow",
+        "0 8px 18px rgba(37,99,235,.15)"
+      );
+      root.style.setProperty(
+        "--editor-btn-shadow-hover",
+        "0 12px 28px rgba(37,99,235,.2)"
+      );
+      root.style.setProperty(
+        "--editor-btn-shadow-active",
+        "0 6px 16px rgba(37,99,235,.18)"
+      );
       root.style.setProperty("--editor-form-bg", "rgba(7,12,22,.85)");
       root.style.setProperty("--editor-form-border", "rgba(148,163,184,.3)");
       root.style.setProperty("--editor-form-text", "#e2e8f0");
       root.style.setProperty("--editor-detail-muted", "rgba(148,163,184,.8)");
       root.style.setProperty("--editor-switch-text", "rgba(191,219,254,.72)");
       root.style.setProperty("--editor-load-chip-bg", "rgba(14,30,54,.8)");
-      root.style.setProperty("--editor-load-chip-border", "rgba(59,130,246,.35)");
+      root.style.setProperty(
+        "--editor-load-chip-border",
+        "rgba(59,130,246,.35)"
+      );
       root.style.setProperty("--editor-load-chip-text", "#bfdbfe");
-      root.style.setProperty("--editor-load-chip-remove", "rgba(248,113,113,.9)");
+      root.style.setProperty(
+        "--editor-load-chip-remove",
+        "rgba(248,113,113,.9)"
+      );
       root.style.setProperty("--editor-load-chip-remove-hover", "#f87171");
       root.style.setProperty("--editor-add-load-bg", "rgba(7,12,22,.8)");
-      root.style.setProperty("--editor-add-load-border", "rgba(148,163,184,.3)");
+      root.style.setProperty(
+        "--editor-add-load-border",
+        "rgba(148,163,184,.3)"
+      );
       root.style.setProperty("--editor-add-load-text", "#e2e8f0");
       root.style.setProperty("--editor-detail-hint", "rgba(148,163,184,.7)");
       root.style.setProperty("--editor-detail-empty", "rgba(148,163,184,.75)");
@@ -379,7 +514,10 @@ export default function AdminSidebar({ user, onLogout }: Props) {
       root.style.setProperty("--editor-empty-text", "rgba(191,219,254,.75)");
       root.style.setProperty("--editor-empty-border", "rgba(59,130,246,.28)");
       root.style.setProperty("--editor-empty-panel", "rgba(8,13,23,.82)");
-      root.style.setProperty("--editor-empty-shadow", "0 20px 40px rgba(7,11,19,.45)");
+      root.style.setProperty(
+        "--editor-empty-shadow",
+        "0 20px 40px rgba(7,11,19,.45)"
+      );
       root.style.setProperty("--viewer-card-bg", "rgba(10,16,27,.8)");
       root.style.setProperty("--viewer-card-border", "rgba(79,70,229,.25)");
       root.style.setProperty("--viewer-card-title", "#fca5a5");

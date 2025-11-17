@@ -48,7 +48,10 @@ export default function AdminDashboard() {
 
   const name = useMemo(() => {
     if (!user) return "Admin";
-    const full = [user.firstname, user.lastname].filter(Boolean).join(" ").trim();
+    const full = [user.firstname, user.lastname]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
     return full || user.username || "Admin";
   }, [user]);
 

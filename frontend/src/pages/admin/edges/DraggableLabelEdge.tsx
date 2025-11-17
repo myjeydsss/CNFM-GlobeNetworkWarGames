@@ -32,25 +32,51 @@ type EdgeData = {
   }) => void;
 };
 
-function buildPath(shape: EdgeShape, params: {
-  sourceX: number;
-  sourceY: number;
-  sourcePosition: any;
-  targetX: number;
-  targetY: number;
-  targetPosition: any;
-}) {
-  const { sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition } = params;
+function buildPath(
+  shape: EdgeShape,
+  params: {
+    sourceX: number;
+    sourceY: number;
+    sourcePosition: any;
+    targetX: number;
+    targetY: number;
+    targetPosition: any;
+  }
+) {
+  const { sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition } =
+    params;
   switch (shape) {
     case "straight":
       return getStraightPath({ sourceX, sourceY, targetX, targetY });
     case "step":
-      return getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 0 });
+      return getSmoothStepPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+        borderRadius: 0,
+      });
     case "bezier":
-      return getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+      return getBezierPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+      });
     case "smoothstep":
     default:
-      return getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+      return getSmoothStepPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+      });
   }
 }
 
@@ -73,20 +99,33 @@ export default function DraggableLabelEdge(props: EdgeProps) {
 
   const shape = (data?.shape ?? "smoothstep") as EdgeShape;
   const offsetX =
-    typeof data?.labelOffset?.x === "number" && Number.isFinite(data?.labelOffset?.x)
+    typeof data?.labelOffset?.x === "number" &&
+    Number.isFinite(data?.labelOffset?.x)
       ? data?.labelOffset?.x
       : 0;
   const offsetY =
-    typeof data?.labelOffset?.y === "number" && Number.isFinite(data?.labelOffset?.y)
+    typeof data?.labelOffset?.y === "number" &&
+    Number.isFinite(data?.labelOffset?.y)
       ? data?.labelOffset?.y
       : 0;
   const [edgePath] = useMemo(
-    () => buildPath(shape, { sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition }),
+    () =>
+      buildPath(shape, {
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+      }),
     [shape, sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition]
   );
 
   const pathRef = useRef<SVGPathElement | null>(null);
-  const [labelXY, setLabelXY] = useState<{ x: number; y: number }>({ x: (sourceX + targetX) / 2, y: (sourceY + targetY) / 2 });
+  const [labelXY, setLabelXY] = useState<{ x: number; y: number }>({
+    x: (sourceX + targetX) / 2,
+    y: (sourceY + targetY) / 2,
+  });
   const labelT = Math.min(1, Math.max(0, data?.labelT ?? 0.5));
 
   useEffect(() => {
@@ -100,7 +139,9 @@ export default function DraggableLabelEdge(props: EdgeProps) {
     const path = pathRef.current;
     if (!path) return { x: clientX, y: clientY };
     const flow = path.closest(".react-flow") as HTMLElement | null;
-    const viewport = flow?.querySelector(".react-flow__viewport") as HTMLElement | null;
+    const viewport = flow?.querySelector(
+      ".react-flow__viewport"
+    ) as HTMLElement | null;
     const rect = flow?.getBoundingClientRect();
     const transform = viewport ? getComputedStyle(viewport).transform : "";
     let tx = 0,
@@ -164,7 +205,9 @@ export default function DraggableLabelEdge(props: EdgeProps) {
   const clickable = typeof data?.onToggle === "function" && !data?.structural;
   const pathStyle: CSSProperties = {
     ...(style || {}),
-    cursor: clickable ? "pointer" : (style as CSSProperties | undefined)?.cursor,
+    cursor: clickable
+      ? "pointer"
+      : (style as CSSProperties | undefined)?.cursor,
     pointerEvents: "stroke",
   };
   const pathClasses = [
@@ -179,7 +222,11 @@ export default function DraggableLabelEdge(props: EdgeProps) {
   const labelBg = data?.labelBg ?? "#facc15";
   const labelBorder = data?.labelBorder ?? "#b45309";
   const labelColor = data?.labelColor ?? "#1f2937";
-  const labelCursor = clickable ? "pointer" : data?.readOnly ? "default" : "grab";
+  const labelCursor = clickable
+    ? "pointer"
+    : data?.readOnly
+    ? "default"
+    : "grab";
   const labelTitle =
     data?.labelTitle ??
     (clickable
@@ -188,8 +235,8 @@ export default function DraggableLabelEdge(props: EdgeProps) {
       ? undefined
       : "Drag to reposition label");
 
-  const emitHover = (type: "enter" | "move" | "leave") =>
-    (event: ReactMouseEvent) =>
+  const emitHover =
+    (type: "enter" | "move" | "leave") => (event: ReactMouseEvent) =>
       data?.onHoverChange?.({
         id,
         type,
