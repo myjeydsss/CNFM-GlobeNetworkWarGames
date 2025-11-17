@@ -1004,27 +1004,18 @@ export default function AdminTopologyViewer({
   }, [sitesByRegion]);
 
   const [expandedRegions, setExpandedRegions] = useState<Set<string>>(
-    () => new Set(Array.from(sitesByRegion.keys()).slice(0, 1))
+    () => new Set()
   );
 
   useEffect(() => {
-    setExpandedRegions((prev) => {
-      const next = new Set<string>();
-      regionSections.forEach((section, index) => {
-        if (prev.has(section.regionCode) || index === 0) {
-          next.add(section.regionCode);
-        }
-      });
-      return next;
-    });
-  }, [regionSections]);
+    setExpandedRegions(() => new Set());
+  }, [regionSections, pickerOpen]);
 
   const toggleRegion = useCallback((code: string) => {
     setExpandedRegions((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) {
-        next.delete(code);
-      } else {
+      const next = new Set<string>();
+      const currentlyOpen = prev.has(code);
+      if (!currentlyOpen) {
         next.add(code);
       }
       return next;

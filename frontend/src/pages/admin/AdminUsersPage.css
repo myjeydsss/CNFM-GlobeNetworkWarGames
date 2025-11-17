@@ -71,21 +71,20 @@
   .users-header-actions .users-btn{
     width:100%;
   }
-  .users-table thead{
-    display:none;
+  .users-table-wrapper{
+    padding:12px;
   }
-  .users-table tbody tr{
-    display:block;
-    margin-bottom:12px;
+  .users-table{
+    min-width:600px;
   }
-  .users-table tbody tr td{
-    display:flex;
+  .users-table-footer{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .users-pagination{
     justify-content:space-between;
-    border-bottom:1px solid rgba(148,163,184,.2);
-  }
-  .users-table tbody tr td:last-child{
-    border-bottom:none;
-    justify-content:flex-end;
+    width:100%;
   }
 }
 
@@ -132,7 +131,10 @@
   border:1px solid var(--editor-border);
   border-radius:24px;
   box-shadow:var(--editor-canvas-shadow);
-  overflow:hidden;
+  overflow:visible;
+  display:flex;
+  flex-direction:column;
+  padding:0;
 }
 
 .users-placeholder{
@@ -144,16 +146,26 @@
 .users-table{
   width:100%;
   border-collapse:separate;
-  border-spacing:0 8px;
-  margin-top:12px;
+  border-spacing:0 12px;
+  margin-top:0;
+  table-layout:fixed;
+  min-width:720px;
 }
+
+.users-table col.col-user{width:28%;}
+.users-table col.col-role{width:14%;}
+.users-table col.col-sites{width:30%;}
+.users-table col.col-status{width:14%;}
+.users-table col.col-actions{width:14%;}
 
 .users-table thead th{
   font-size:12px;
   text-transform:uppercase;
   letter-spacing:.1em;
   color:var(--editor-muted);
-  padding:0 16px 8px;
+  padding:12px 24px 10px;
+  text-align:left;
+  border-bottom:1px solid rgba(148,163,184,.25);
 }
 
 .users-table tbody tr{
@@ -164,7 +176,42 @@
 
 .users-table tbody tr td{
   padding:22px 24px;
-  border-bottom:1px solid transparent;
+  border-bottom:1px solid rgba(148,163,184,.16);
+  vertical-align:middle;
+}
+
+.users-table tbody tr td:last-child{
+  border-bottom-color:transparent;
+}
+
+.users-table-wrapper{
+  padding:12px 16px 4px;
+  overflow-x:auto;
+  overflow-y:visible;
+  position:relative;
+}
+
+.cell-user,
+.cell-role,
+.cell-sites,
+.cell-status{
+  text-align:left;
+}
+
+.cell-actions{
+  text-align:right;
+}
+
+.users-table thead th.cell-actions{
+  text-align:right;
+}
+
+.users-table thead th.cell-user{
+  padding-left:28px;
+}
+
+.users-table thead th.cell-actions{
+  padding-right:28px;
 }
 
 .users-table tbody tr td:first-child{
@@ -240,6 +287,11 @@
   font-size:13px;
 }
 
+.users-muted.subtle{
+  font-size:12px;
+  margin-top:4px;
+}
+
 .status-pill{
   display:inline-flex;
   align-items:center;
@@ -262,18 +314,117 @@
   color:#991b1b;
 }
 
-.row-actions{
-  display:flex;
-  gap:8px;
-  justify-content:flex-end;
-}
-
 .users-btn.pill{
   border-radius:999px;
   padding:8px 18px;
   border:1px solid var(--editor-border);
   background:var(--editor-panel);
   font-weight:600;
+}
+
+.users-btn.pill.danger{
+  border-color:rgba(239,68,68,.4);
+  color:#b91c1c;
+}
+
+.users-btn.pill.danger:disabled{
+  opacity:.6;
+}
+
+.users-btn.pill.icon-only{
+  width:42px;
+  height:42px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+}
+
+.users-btn.pill.icon-only svg{
+  fill:currentColor;
+}
+
+.users-table-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  padding:16px 24px 18px;
+  border-top:1px solid rgba(148,163,184,.18);
+  background:var(--editor-panel);
+}
+
+.page-size-control{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:13px;
+  color:var(--editor-muted);
+}
+
+.page-size-control label{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-size:11px;
+}
+
+.page-size-control select{
+  border-radius:999px;
+  border:1px solid var(--editor-border);
+  background:var(--editor-panel);
+  color:var(--editor-text);
+  padding:6px 32px 6px 12px;
+  font-weight:600;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9 1L5 5 1 1' stroke='%2394a3b8' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+}
+
+.action-menu-wrapper{
+  position:relative;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.action-menu{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  min-width:140px;
+  border:1px solid var(--editor-border);
+  border-radius:14px;
+  background:var(--editor-panel);
+  box-shadow:0 20px 30px rgba(15,23,42,.18);
+  display:flex;
+  flex-direction:column;
+  z-index:10;
+  padding:6px 0;
+}
+
+.action-menu button{
+  border:0;
+  background:transparent;
+  padding:10px 16px;
+  text-align:left;
+  font-weight:600;
+  font-size:13px;
+  color:var(--editor-text);
+  cursor:pointer;
+}
+
+.action-menu button:hover{
+  background:rgba(59,130,246,.12);
+}
+
+.action-menu button.danger{
+  color:#dc2626;
 }
 
 .users-modal{
@@ -283,6 +434,9 @@
   display:flex;
   align-items:center;
   justify-content:center;
+  padding:24px;
+  box-sizing:border-box;
+  min-height:100vh;
 }
 
 .users-modal-backdrop{
@@ -299,9 +453,10 @@
   border:1px solid var(--editor-border);
   box-shadow:0 40px 60px rgba(15,23,42,.25);
   padding:32px;
-  width:min(760px,90vw);
-  max-height:90vh;
+  width:min(780px,90vw);
+  max-height:calc(100vh - 80px);
   overflow:auto;
+  margin:auto;
 }
 
 .users-modal-content header h2{
@@ -317,6 +472,18 @@
   display:flex;
   flex-direction:column;
   gap:22px;
+}
+
+.assign-form{
+  gap:18px;
+}
+
+.assign-basic-info{
+  margin-bottom:4px;
+}
+
+.assign-username{
+  margin-top:-6px;
 }
 
 .users-modal-content label{
@@ -505,9 +672,9 @@
 }
 
 .users-pagination{
-  margin:24px 24px 12px;
+  margin:0;
   display:flex;
-  justify-content:space-between;
+  justify-content:flex-end;
   align-items:center;
   font-size:14px;
   color:var(--editor-muted);
@@ -572,8 +739,6 @@
   .users-header-actions input[type="search"]{
     width:100%;
   }
-}
-  transition:color .15s ease;
 }
 .users-password-field{
   position:relative;

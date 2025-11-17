@@ -30,6 +30,7 @@ type EdgeData = {
     clientX: number;
     clientY: number;
   }) => void;
+  interactionWidth?: number;
 };
 
 function buildPath(
@@ -203,12 +204,19 @@ export default function DraggableLabelEdge(props: EdgeProps) {
   }
 
   const clickable = typeof data?.onToggle === "function" && !data?.structural;
-  const pathStyle: CSSProperties = {
-    ...(style || {}),
+  const interactionWidth = data?.interactionWidth ?? 56;
+  const hitPathStyle: CSSProperties = {
     cursor: clickable
       ? "pointer"
       : (style as CSSProperties | undefined)?.cursor,
     pointerEvents: "stroke",
+    stroke: "transparent",
+    strokeWidth: interactionWidth,
+    fill: "none",
+  };
+  const visualPathStyle: CSSProperties = {
+    ...(style || {}),
+    pointerEvents: "none",
   };
   const pathClasses = [
     "react-flow__edge-path",
@@ -256,19 +264,26 @@ export default function DraggableLabelEdge(props: EdgeProps) {
         ref={pathRef}
         d={edgePath}
         className={pathClasses}
-        markerEnd={markerEnd}
-        style={pathStyle}
+        stroke="transparent"
+        strokeWidth={interactionWidth}
+        fill="none"
+        style={hitPathStyle}
         onClick={handleToggle}
         onMouseEnter={emitHover("enter")}
-        onMouseMove={emitHover("move")}
         onMouseLeave={emitHover("leave")}
+      />
+      <path
+        d={edgePath}
+        className={pathClasses}
+        markerEnd={markerEnd}
+        fill="none"
+        style={visualPathStyle}
       />
       {label ? (
         <EdgeLabelRenderer>
           <div
             onMouseDown={data?.readOnly ? undefined : startDrag}
             onMouseEnter={emitHover("enter")}
-            onMouseMove={emitHover("move")}
             onMouseLeave={emitHover("leave")}
             onClick={handleToggle}
             style={{

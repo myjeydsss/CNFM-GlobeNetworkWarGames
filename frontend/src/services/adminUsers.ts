@@ -89,3 +89,29 @@ export async function updateUserAssignments(
   }
   return (await res.json()) as AdminUserRecord;
 }
+
+export async function deleteAdminUser(userId: number): Promise<void> {
+  const res = await authFetch(`/api/admin/users/${userId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const data = await parseResponse(res);
+    throw new Error(data?.message || "Failed to delete user.");
+  }
+}
+
+export async function updateAdminUserProfile(
+  userId: number,
+  payload: { firstname?: string; lastname?: string; username: string }
+): Promise<AdminUserRecord> {
+  const res = await authFetch(`/api/admin/users/${userId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const data = await parseResponse(res);
+    throw new Error(data?.message || "Failed to update user profile.");
+  }
+  return (await res.json()) as AdminUserRecord;
+}

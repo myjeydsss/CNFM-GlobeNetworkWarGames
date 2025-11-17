@@ -234,6 +234,45 @@ body.theme-light .sb-link.active {
   flex:1 1 auto;
 }
 
+.viewer-page-transition{
+  animation: viewerFloatIn .55s ease-out both;
+}
+.viewer-page-transition > *{
+  opacity:0;
+  transform:translateY(20px);
+  animation: viewerChildIn .45s ease-out forwards .08s;
+}
+.viewer-page-transition > *:nth-child(2){
+  animation-delay:.14s;
+}
+.viewer-page-transition > *:nth-child(3){
+  animation-delay:.2s;
+}
+
+@keyframes viewerFloatIn{
+  from{
+    opacity:0;
+    transform:translateY(30px);
+    filter:blur(2px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+    filter:blur(0);
+  }
+}
+
+@keyframes viewerChildIn{
+  from{
+    opacity:0;
+    transform:translateY(20px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
 .sb-root {
   position: fixed;
   inset: 0 auto 0 0;

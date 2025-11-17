@@ -312,23 +312,45 @@
 }
 
 .editor-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
   border-radius:999px;
-  padding:8px 16px;
+  padding:7px 14px;
   font-weight:600;
-  font-size:12px;
-  letter-spacing:.04em;
+  font-size:11px;
+  letter-spacing:.08em;
   text-transform:uppercase;
   border:1px solid var(--editor-border);
   background:var(--editor-panel);
   color:var(--editor-text);
   cursor:pointer;
   box-shadow:var(--editor-btn-shadow);
-  transition:transform .1s ease, box-shadow .18s ease, opacity .18s ease;
+  transition:transform .1s ease, box-shadow .18s ease, background-color .18s ease,
+    opacity .18s ease, color .18s ease;
 }
 
-.editor-btn:hover{
+.editor-btn .btn-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:1.3rem;
+  height:1.3rem;
+  flex-shrink:0;
+}
+
+.editor-btn .btn-icon svg{
+  width:100%;
+  height:100%;
+  stroke:currentColor;
+}
+
+.editor-btn:hover,
+.editor-btn:focus-visible{
   transform:translateY(-1px);
   box-shadow:var(--editor-btn-shadow-hover);
+  background:rgba(59,130,246,.08);
 }
 
 .editor-btn:disabled{
@@ -344,10 +366,20 @@
   color:#fff;
 }
 
+.editor-btn.primary:hover,
+.editor-btn.primary:focus-visible{
+  background:linear-gradient(135deg, rgba(59,130,246,.95), var(--editor-accent));
+}
+
 .editor-btn.danger{
   background:rgba(239,68,68,.12);
   border-color:rgba(239,68,68,.35);
   color:#b91c1c;
+}
+
+.editor-btn.danger:hover,
+.editor-btn.danger:focus-visible{
+  background:rgba(239,68,68,.18);
 }
 
 body.theme-dark .editor-btn.danger{
@@ -1140,11 +1172,9 @@ body.theme-dark .editor-btn.danger{
 .site-picker-list{
   display:grid;
   gap:8px;
-  padding:0 14px 14px;
-}
-
-.site-picker-section.closed .site-picker-list{
-  display:none;
+  padding:6px 14px 14px;
+  max-height:240px;
+  overflow-y:auto;
 }
 
 .site-picker-item{
@@ -1203,11 +1233,24 @@ body.theme-dark .editor-btn.danger{
   justify-content:center;
   min-width:150px;
   min-height:60px;
-  padding:12px 18px;
+  padding:10px 20px;
   border-radius:16px;
   box-sizing:border-box;
   text-align:center;
   box-shadow:inherit;
+}
+.topology-node::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  box-shadow:0 12px 26px rgba(15,23,42,.25);
+  opacity:0;
+  transition:opacity .18s ease;
+  pointer-events:none;
+}
+.topology-node:hover::before{
+  opacity:.55;
 }
 
 .topology-node.node{
@@ -1262,6 +1305,9 @@ body.theme-dark .editor-btn.danger{
   transform:scale(.95);
   pointer-events:all !important;
   box-shadow:0 0 0 2px rgba(37,99,235,.18);
+}
+.topology-node:hover{
+  box-shadow:0 0 0 3px rgba(37,99,235,.25);
 }
 
 .topology-node:hover .topology-handle:hover,

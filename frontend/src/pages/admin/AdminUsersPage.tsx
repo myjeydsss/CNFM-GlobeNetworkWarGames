@@ -7,6 +7,8 @@ import {
   fetchAdminUsers,
   createSiteAdminUser,
   updateUserAssignments,
+  deleteAdminUser,
+  updateAdminUserProfile,
   type AdminUserRecord,
 } from "../../services/adminUsers";
 import {
@@ -24,6 +26,8 @@ type CreateFormState = {
   siteIds: number[];
 };
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
 export default function AdminUsersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const focusedSiteCode = searchParams.get("siteCode") ?? "";
@@ -36,6 +40,8 @@ export default function AdminUsersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [assignUser, setAssignUser] = useState<AdminUserRecord | null>(null);
   const [creating, setCreating] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
+  const [actionMenuUserId, setActionMenuUserId] = useState<number | null>(null);
   const [createForm, setCreateForm] = useState<CreateFormState>({
     firstname: "",
     lastname: "",
@@ -50,8 +56,13 @@ export default function AdminUsersPage() {
   const [assignSiteSearch, setAssignSiteSearch] = useState("");
   const [assignSelection, setAssignSelection] = useState<number[]>([]);
   const [savingAssignments, setSavingAssignments] = useState(false);
+  const [assignForm, setAssignForm] = useState({
+    firstname: "",
+    lastname: "",
+    username: "",
+  });
   const currentUser = useMemo(() => loadUser(), []);
-  const PAGE_SIZE = 10;
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRegions, setExpandedRegions] = useState<
     Record<string, boolean>
@@ -60,6 +71,27 @@ export default function AdminUsersPage() {
       OTHER: true,
     })
   );
+
+  useEffect(() => {
+    if (!actionMenuUserId) return;
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest(".action-menu-wrapper")) {
+        setActionMenuUserId(null);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActionMenuUserId(null);
+      }
+    };
+    window.addEventListener("click", handleClick);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("click", handleClick);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [actionMenuUserId]);
 
   useEffect(() => {
     document.title = "CNFM • User Management";
@@ -120,6 +152,11 @@ export default function AdminUsersPage() {
     if (!assignUser) return;
     setAssignSelection(assignUser.assignedSites.map((site) => site.siteId));
     setAssignSiteSearch("");
+    setAssignForm({
+      firstname: assignUser.firstname ?? "",
+      lastname: assignUser.lastname ?? "",
+      username: assignUser.username ?? "",
+    });
   }, [assignUser]);
 
   const filteredUsers = useMemo(() => {
@@ -142,12 +179,12 @@ export default function AdminUsersPage() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(Math.max(filteredUsers.length, 1) / PAGE_SIZE)
+    Math.ceil(Math.max(filteredUsers.length, 1) / pageSize)
   );
   const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredUsers.slice(start, start + PAGE_SIZE);
-  }, [filteredUsers, currentPage]);
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -156,11 +193,16 @@ export default function AdminUsersPage() {
   }, [currentPage, totalPages]);
 
   const showingStart = filteredUsers.length
-    ? (currentPage - 1) * PAGE_SIZE + 1
+    ? (currentPage - 1) * pageSize + 1
     : 0;
   const showingEnd = filteredUsers.length
-    ? Math.min(filteredUsers.length, currentPage * PAGE_SIZE)
+    ? Math.min(filteredUsers.length, currentPage * pageSize)
     : 0;
+
+  const handlePageSizeChange = useCallback((size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  }, []);
 
   const filteredCreateSites = useMemo(() => {
     if (!createSiteSearch.trim()) return siteOptions;
@@ -293,8 +335,28 @@ export default function AdminUsersPage() {
 
   const handleAssignmentSave = async () => {
     if (!assignUser) return;
+    const trimmedUsername = assignForm.username.trim();
+    if (!trimmedUsername) {
+      Swal.fire({
+        icon: "warning",
+        title: "Username required",
+        text: "Please provide a username for this site admin.",
+      });
+      return;
+    }
     try {
       setSavingAssignments(true);
+      const profileChanged =
+        trimmedUsername !== assignUser.username ||
+        (assignForm.firstname ?? "") !== (assignUser.firstname ?? "") ||
+        (assignForm.lastname ?? "") !== (assignUser.lastname ?? "");
+      if (profileChanged) {
+        await updateAdminUserProfile(assignUser.id, {
+          username: trimmedUsername,
+          firstname: assignForm.firstname.trim(),
+          lastname: assignForm.lastname.trim(),
+        });
+      }
       await updateUserAssignments(assignUser.id, assignSelection);
       await loadUsers();
       await loadSites();
@@ -302,14 +364,14 @@ export default function AdminUsersPage() {
       setAssignUser(null);
       Swal.fire({
         icon: "success",
-        title: "Assignments updated",
-        text: "Site access was updated for this user.",
+        title: "User updated",
+        text: "Profile and assignments were updated.",
       });
     } catch (err: any) {
       Swal.fire({
         icon: "error",
         title: "Update failed",
-        text: err?.message || "Unable to update assignments.",
+        text: err?.message || "Unable to update this user.",
       });
     } finally {
       setSavingAssignments(false);
@@ -322,6 +384,44 @@ export default function AdminUsersPage() {
     !createForm.password ||
     createForm.password !== createForm.confirmPassword ||
     !createForm.siteIds.length;
+
+  const handleDeleteUser = useCallback(
+    async (user: AdminUserRecord) => {
+      if (deletingUserId) return;
+      const confirm = await Swal.fire({
+        icon: "warning",
+        title: `Delete ${user.username}?`,
+        text: "This will permanently remove their site admin access.",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#475569",
+        confirmButtonText: "Delete",
+      });
+      if (!confirm.isConfirmed) return;
+      try {
+        setDeletingUserId(user.id);
+        await deleteAdminUser(user.id);
+        await loadUsers();
+        await loadSites();
+        window.dispatchEvent(new Event("cnfm-sites-refresh"));
+        Swal.fire({
+          icon: "success",
+          title: "Site admin removed",
+          timer: 1800,
+          showConfirmButton: false,
+        });
+      } catch (err: any) {
+        Swal.fire({
+          icon: "error",
+          title: "Delete failed",
+          text: err?.message || "Unable to delete this user.",
+        });
+      } finally {
+        setDeletingUserId(null);
+      }
+    },
+    [deletingUserId, loadSites, loadUsers]
+  );
 
   return (
     <div className="admin-users">
@@ -337,7 +437,7 @@ export default function AdminUsersPage() {
         <div className="users-header-actions">
           <input
             type="search"
-            placeholder="Search users…"
+            placeholder="Search Users…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -365,129 +465,199 @@ export default function AdminUsersPage() {
           <div className="users-placeholder">Loading users…</div>
         ) : filteredUsers.length ? (
           <>
-            <table className="users-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Sites</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className="user-name">
-                        {[user.firstname, user.lastname]
-                          .filter(Boolean)
-                          .join(" ")
-                          .trim() || user.username}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`role-chip role-${user.role}`}>
-                        {formatRole(user.role)}
-                      </span>
-                    </td>
-                    <td>
-                      {user.assignedSites.length ? (
-                        <div className="site-chip-wrap">
-                          {user.assignedSites.slice(0, 3).map((site) => (
-                            <span key={site.siteId} className="site-chip">
-                              {site.name}{" "}
-                              <small>
-                                (
-                                {site.regionName && site.regionName.length
-                                  ? site.regionName
-                                  : "Unassigned"}
-                                )
-                              </small>
-                            </span>
-                          ))}
-                          {user.assignedSites.length > 3 ? (
-                            <span className="site-chip more">
-                              +{user.assignedSites.length - 3} more
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className="users-muted">No sites assigned</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`status-pill ${
-                          user.status === "active" ? "active" : "inactive"
-                        }`}
-                      >
-                        {user.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="row-actions">
-                        <button
-                          type="button"
-                          className="users-btn pill"
-                          onClick={() => setAssignUser(user)}
-                        >
-                          Assign sites
-                        </button>
-                      </div>
-                    </td>
+            <div className="users-table-wrapper">
+              <table className="users-table">
+                <colgroup>
+                  <col className="col-user" />
+                  <col className="col-role" />
+                  <col className="col-sites" />
+                  <col className="col-status" />
+                  <col className="col-actions" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="cell-user">User</th>
+                    <th className="cell-role">Role</th>
+                    <th className="cell-sites">Sites</th>
+                    <th className="cell-status">Status</th>
+                    <th className="cell-actions">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="users-pagination">
-              <span>
-                Showing {showingStart}-{showingEnd} of {filteredUsers.length}
-              </span>
-              <div className="pagination-controls">
-                <button
-                  type="button"
-                  className="pager-btn"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                </thead>
+                <tbody>
+                  {paginatedUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td className="cell-user">
+                        <div className="user-name">
+                          {[user.firstname, user.lastname]
+                            .filter(Boolean)
+                            .join(" ")
+                            .trim() || user.username}
+                        </div>
+                        <div className="users-muted subtle">
+                          @{user.username}
+                        </div>
+                      </td>
+                      <td className="cell-role">
+                        <span className={`role-chip role-${user.role}`}>
+                          {formatRole(user.role)}
+                        </span>
+                      </td>
+                      <td className="cell-sites">
+                        {user.assignedSites.length ? (
+                          <div className="site-chip-wrap">
+                            {user.assignedSites.slice(0, 3).map((site) => (
+                              <span key={site.siteId} className="site-chip">
+                                {site.name}{" "}
+                                <small>
+                                  (
+                                  {site.regionName && site.regionName.length
+                                    ? site.regionName
+                                    : "Unassigned"}
+                                  )
+                                </small>
+                              </span>
+                            ))}
+                            {user.assignedSites.length > 3 ? (
+                              <span className="site-chip more">
+                                +{user.assignedSites.length - 3} more
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="users-muted">No sites assigned</span>
+                        )}
+                      </td>
+                      <td className="cell-status">
+                        <span
+                          className={`status-pill ${
+                            user.status === "active" ? "active" : "inactive"
+                          }`}
+                        >
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="cell-actions">
+                        <div className="action-menu-wrapper">
+                          <button
+                            type="button"
+                            className="users-btn pill icon-only"
+                            aria-haspopup="true"
+                            aria-expanded={actionMenuUserId === user.id}
+                            aria-label="Open actions"
+                            onClick={() =>
+                              setActionMenuUserId((prev) =>
+                                prev === user.id ? null : user.id
+                              )
+                            }
+                          >
+                            <svg viewBox="0 0 20 20" width="20" height="20">
+                              <circle cx="10" cy="4" r="1.8" />
+                              <circle cx="10" cy="10" r="1.8" />
+                              <circle cx="10" cy="16" r="1.8" />
+                            </svg>
+                          </button>
+                          {actionMenuUserId === user.id && (
+                            <div className="action-menu" role="menu">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setAssignUser(user);
+                                  setActionMenuUserId(null);
+                                }}
+                              >
+                                Edit
+                              </button>
+                              {currentUser?.role === "super_admin" &&
+                                user.role === "site_admin" && (
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="danger"
+                                    onClick={() => {
+                                      setActionMenuUserId(null);
+                                      handleDeleteUser(user);
+                                    }}
+                                    disabled={deletingUserId === user.id}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="users-table-footer">
+              <div className="page-size-control">
+                <label htmlFor="page-size-select">Rows per page</label>
+                <select
+                  id="page-size-select"
+                  value={pageSize}
+                  onChange={(event) =>
+                    handlePageSizeChange(Number(event.target.value))
                   }
-                  disabled={currentPage === 1}
-                  aria-label="Previous page"
                 >
-                  <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path
-                      d="M15 18l-6-6 6-6"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-                <span className="pager-meta">
-                  Page {currentPage} of {totalPages}
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="users-pagination">
+                <span>
+                  Showing {showingStart}-{showingEnd} of {filteredUsers.length}
                 </span>
-                <button
-                  type="button"
-                  className="pager-btn"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  aria-label="Next page"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path
-                      d="M9 6l6 6-6 6"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+                <div className="pagination-controls">
+                  <button
+                    type="button"
+                    className="pager-btn"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage === 1}
+                    aria-label="Previous page"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        d="M15 18l-6-6 6-6"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <span className="pager-meta">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="pager-btn"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    aria-label="Next page"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        d="M9 6l6 6-6 6"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </>
@@ -702,98 +872,145 @@ export default function AdminUsersPage() {
             onClick={() => !savingAssignments && setAssignUser(null)}
           />
           <div className="users-modal-content">
-            <header>
-              <h2>Assign sites</h2>
-              <p>
-                {assignUser.firstname} {assignUser.lastname} ·{" "}
-                {assignUser.username}
-              </p>
-            </header>
-            <div className="site-select">
-              <div className="site-select-header">
-                <div>
-                  <span>Available sites</span>
-                  <p>Select or deselect sites to update access.</p>
-                </div>
-                <input
-                  type="search"
-                  placeholder="Search sites"
-                  value={assignSiteSearch}
-                  onChange={(e) => setAssignSiteSearch(e.target.value)}
-                  disabled={siteLoading}
-                />
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleAssignmentSave();
+              }}
+              className="assign-form"
+            >
+              <header>
+                <h2>Edit Site Admin</h2>
+                <p>Update profile details and site access.</p>
+              </header>
+              <div className="form-grid assign-basic-info">
+                <label className="floating-input users-field">
+                  <span>First name</span>
+                  <input
+                    type="text"
+                    value={assignForm.firstname}
+                    onChange={(e) =>
+                      setAssignForm((prev) => ({
+                        ...prev,
+                        firstname: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="floating-input users-field">
+                  <span>Last name</span>
+                  <input
+                    type="text"
+                    value={assignForm.lastname}
+                    onChange={(e) =>
+                      setAssignForm((prev) => ({
+                        ...prev,
+                        lastname: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
               </div>
-              {siteLoading ? (
-                <p className="users-muted">Loading sites…</p>
-              ) : groupedAssignSites.some((group) => group.sites.length) ? (
-                groupedAssignSites.map((group) => (
-                  <section
-                    key={`assign-${group.code}`}
-                    className="site-region-block"
-                  >
-                    <button
-                      type="button"
-                      className="site-region-header"
-                      onClick={() => toggleRegion(group.code)}
-                      aria-expanded={!!expandedRegions[group.code]}
+              <label className="floating-input users-field full-width assign-username">
+                <span>Username</span>
+                <input
+                  type="text"
+                  value={assignForm.username}
+                  onChange={(e) =>
+                    setAssignForm((prev) => ({
+                      ...prev,
+                      username: e.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <div className="site-select">
+                <div className="site-select-header">
+                  <div>
+                    <span>Available sites</span>
+                    <p>Select or deselect sites to update access.</p>
+                  </div>
+                  <input
+                    type="search"
+                    placeholder="Search Sites"
+                    value={assignSiteSearch}
+                    onChange={(e) => setAssignSiteSearch(e.target.value)}
+                    disabled={siteLoading}
+                  />
+                </div>
+                {siteLoading ? (
+                  <p className="users-muted">Loading sites…</p>
+                ) : groupedAssignSites.some((group) => group.sites.length) ? (
+                  groupedAssignSites.map((group) => (
+                    <section
+                      key={`assign-${group.code}`}
+                      className="site-region-block"
                     >
-                      <h4>{group.label}</h4>
-                      <span className="region-toggle" aria-hidden="true">
-                        <ChevronIcon open={!!expandedRegions[group.code]} />
-                      </span>
-                    </button>
-                    {expandedRegions[group.code] ? (
-                      group.sites.length ? (
-                        <div className="site-region-grid">
-                          {group.sites.map((site) => {
-                            const selected = assignSelection.includes(site.id);
-                            return (
-                              <label
-                                key={site.id}
-                                className={`site-option ${
-                                  selected ? "selected" : ""
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selected}
-                                  onChange={() => toggleAssignSite(site.id)}
-                                />
-                                <span className="site-name">{site.name}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="users-muted region-empty">
-                          No sites available for now.
-                        </p>
-                      )
-                    ) : null}
-                  </section>
-                ))
-              ) : (
-                <p className="users-muted">No sites match this search.</p>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="users-btn ghost"
-                onClick={() => !savingAssignments && setAssignUser(null)}
-                disabled={savingAssignments}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="users-btn primary"
-                onClick={handleAssignmentSave}
-                disabled={savingAssignments}
-              >
-                {savingAssignments ? "Saving…" : "Save changes"}
-              </button>
-            </div>
+                      <button
+                        type="button"
+                        className="site-region-header"
+                        onClick={() => toggleRegion(group.code)}
+                        aria-expanded={!!expandedRegions[group.code]}
+                      >
+                        <h4>{group.label}</h4>
+                        <span className="region-toggle" aria-hidden="true">
+                          <ChevronIcon open={!!expandedRegions[group.code]} />
+                        </span>
+                      </button>
+                      {expandedRegions[group.code] ? (
+                        group.sites.length ? (
+                          <div className="site-region-grid">
+                            {group.sites.map((site) => {
+                              const selected = assignSelection.includes(
+                                site.id
+                              );
+                              return (
+                                <label
+                                  key={site.id}
+                                  className={`site-option ${
+                                    selected ? "selected" : ""
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={() => toggleAssignSite(site.id)}
+                                  />
+                                  <span className="site-name">{site.name}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="users-muted region-empty">
+                            No sites available for now.
+                          </p>
+                        )
+                      ) : null}
+                    </section>
+                  ))
+                ) : (
+                  <p className="users-muted">No sites match this search.</p>
+                )}
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="users-btn ghost"
+                  onClick={() => !savingAssignments && setAssignUser(null)}
+                  disabled={savingAssignments}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="users-btn primary"
+                  disabled={savingAssignments}
+                >
+                  {savingAssignments ? "Saving…" : "Save changes"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

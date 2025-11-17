@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import "../../components/admin/AdminSidebar.css";
 import { useEffect } from "react";
@@ -6,6 +6,7 @@ import { clearAuth, loadUser } from "../../services/auth";
 
 export default function AdminLayout() {
   const user = loadUser();
+  const location = useLocation();
 
   const handleLogout = () => {
     clearAuth();
@@ -31,7 +32,13 @@ export default function AdminLayout() {
       </a>
       <AdminSidebar user={user} onLogout={handleLogout} />
       <main id="admin-main" className="admin-shell">
-        <Outlet />
+        <div
+          key={location.pathname}
+          className="admin-page-transition"
+          aria-live="polite"
+        >
+          <Outlet />
+        </div>
       </main>
     </>
   );

@@ -85,7 +85,12 @@ function TopologyNode({ data, selected, isConnectable }: NodeProps<TopologyNodeD
           position={Position.Bottom}
           className="topology-handle target"
           id={`t-bottom-${idx + 1}`}
-          style={{ left: `${pct}%`, bottom: 0, transform: "translate(-50%, 0)", zIndex: 9 }}
+          style={{
+            left: `${pct}%`,
+            bottom: -2,
+            transform: "translate(-50%, 30%)",
+            zIndex: 9,
+          }}
           isConnectable={isConnectable}
         />
       ))}
@@ -96,7 +101,12 @@ function TopologyNode({ data, selected, isConnectable }: NodeProps<TopologyNodeD
           position={Position.Bottom}
           className="topology-handle source"
           id={`s-bottom-${idx + 1}`}
-          style={{ left: `${pct}%`, bottom: 0, transform: "translate(-50%, 0)", zIndex: 10 }}
+          style={{
+            left: `${pct}%`,
+            bottom: -2,
+            transform: "translate(-50%, 30%)",
+            zIndex: 10,
+          }}
           isConnectable={isConnectable}
         />
       ))}

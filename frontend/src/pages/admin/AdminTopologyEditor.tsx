@@ -62,6 +62,8 @@ type DraftTopology = {
   nodes: Array<{
     id: string;
     label?: string;
+    name?: string;
+    code?: string;
     x?: number;
     y?: number;
     width?: number;
@@ -123,6 +125,33 @@ function nodeData(node: Node): Record<string, any> | undefined {
   return (node.data as Record<string, any> | undefined) ?? undefined;
 }
 
+function nodeKind(node: Node): string {
+  const data = nodeData(node);
+  if (typeof data?.kind === "string" && data.kind.length) return data.kind;
+  const direct = (node as any)?.kind;
+  return typeof direct === "string" && direct.length ? direct : "node";
+}
+
+function ensuredNodeLabel(node: Node): string {
+  const data = nodeData(node);
+  if (typeof data?.label === "string" && data.label.length) return data.label;
+  if (typeof (node as any)?.label === "string" && (node as any).label.length)
+    return (node as any).label;
+  return node.id;
+}
+
+function withEnsuredNodeLabels(list: Node[]): Node[] {
+  return list.map((node) => {
+    const label = ensuredNodeLabel(node);
+    const data = nodeData(node);
+    if (data?.label === label) return node;
+    return {
+      ...node,
+      data: { ...(data ?? {}), label },
+    };
+  });
+}
+
 function normalizeHandleId(id?: string | null): string | undefined {
   if (typeof id !== "string") return undefined;
   const match = id.match(/^(s|t)-(top|bottom|left|right)-(\d+)$/);
@@ -181,6 +210,152 @@ const SECONDARY_NODE_STYLE: CSSProperties = {
   letterSpacing: ".05em",
   boxShadow: "0 10px 24px rgba(15,23,42,.35)",
 };
+
+function IconPlus() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 7h14M10 10v7M14 10v7M9 7l1-2h4l1 2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 7v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconNodes() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect
+        x="5"
+        y="5"
+        width="7"
+        height="7"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <rect
+        x="12"
+        y="12"
+        width="7"
+        height="7"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+function IconBlock() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect
+        x="6"
+        y="6"
+        width="12"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+function IconMapMini() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 7.5 9 5l6 2.5 5-2.5v13l-5 2.5-6-2.5-5 2.5v-13Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 5v13M15 7.5v13"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+    </svg>
+  );
+}
+
+function IconDeleteSelection() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="m9.5 9.5 5 5m0-5-5 5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconSave() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M7 5h10l2 2v12H5V5h2Zm0 0v6h10V5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 5v4h4V5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconPublish() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 6v12m0-12 4 4m-4-4-4 4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 18h12"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 function makeId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random()
@@ -298,8 +473,9 @@ function flowFromDraft(topology: DraftTopology): FlowBundle {
       : baseStyle;
     const widthVal = typeof n.width === "number" ? n.width : 190;
     const heightVal = typeof n.height === "number" ? n.height : 80;
+    const labelText = n.label || (n as any)?.name || n.id;
     const data: TopologyNodeData = {
-      label: n.label || n.id,
+      label: labelText,
       kind,
       style: styleOverride,
     };
@@ -374,31 +550,51 @@ function serializeDraft(nodes: Node[], edges: BaseEdge[]): DraftTopology {
     return undefined;
   };
 
+  const takenIds = new Set<string>();
+  const idMap = new Map<string, string>();
+  nodes.forEach((node) => {
+    const kind = nodeKind(node);
+    if (kind === "core") {
+      idMap.set(node.id, node.id);
+      takenIds.add(node.id);
+      return;
+    }
+    const label = ensuredNodeLabel(node).trim();
+    const baseId = label || node.id;
+    let candidate = baseId;
+    let counter = 2;
+    while (takenIds.has(candidate)) {
+      candidate = `${baseId}-${counter++}`;
+    }
+    takenIds.add(candidate);
+    idMap.set(node.id, candidate);
+  });
+
   return {
-    nodes: nodes.map((node) => ({
-      id: node.id,
-      label: (() => {
-        const data = nodeData(node);
-        return typeof data?.label === "string" ? data.label : "";
-      })(),
-      x: node.position.x,
-      y: node.position.y,
-      color: (() => {
-        const data = nodeData(node);
-        const bg = data?.style?.background ?? node.style?.background;
-        return typeof bg === "string" ? bg : undefined;
-      })(),
-      width: dimValue(node, "width"),
-      height: dimValue(node, "height"),
-      kind: (() => {
-        const data = nodeData(node);
-        return typeof data?.kind === "string" ? data.kind : "node";
-      })(),
-    })),
+    nodes: nodes.map((node) => {
+      const persistedId = idMap.get(node.id) ?? node.id;
+      const label = ensuredNodeLabel(node);
+      return {
+        id: persistedId,
+        label,
+        name: label,
+        code: persistedId,
+        x: node.position.x,
+        y: node.position.y,
+        color: (() => {
+          const data = nodeData(node);
+          const bg = data?.style?.background ?? node.style?.background;
+          return typeof bg === "string" ? bg : undefined;
+        })(),
+        width: dimValue(node, "width"),
+        height: dimValue(node, "height"),
+        kind: nodeKind(node),
+      };
+    }),
     edges: edges.map((edge) => ({
       id: edge.id,
-      source: edge.source,
-      target: edge.target,
+      source: idMap.get(edge.source) ?? edge.source,
+      target: idMap.get(edge.target) ?? edge.target,
       sourceHandle: normalizeHandleId(edge.sourceHandle),
       targetHandle: normalizeHandleId(edge.targetHandle),
       label: edge.label ?? "",
@@ -424,7 +620,6 @@ export default function AdminTopologyEditor() {
     code: string;
     name: string;
   } | null>(null);
-  const [siteRefreshKey, setSiteRefreshKey] = useState(0);
   const [siteListLoading, setSiteListLoading] = useState(false);
   const [siteListError, setSiteListError] = useState<string | null>(null);
   const [selectedSiteCode, setSelectedSiteCode] = useState<string | null>(null);
@@ -436,6 +631,9 @@ export default function AdminTopologyEditor() {
   const [newServiceName, setNewServiceName] = useState("");
   const [addingService, setAddingService] = useState(false);
   const [serviceActionId, setServiceActionId] = useState<number | null>(null);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
+  const edgeReconnectSuccess = useRef(false);
+  const edgeReconnectSnapshot = useRef<BaseEdge | null>(null);
 
   useEffect(() => {
     setBaseEdges((edges) => sanitizeEdges(edges));
@@ -448,12 +646,6 @@ export default function AdminTopologyEditor() {
     );
   }, [siteOptions]);
 
-  useEffect(() => {
-    const handler = () => setSiteRefreshKey((key) => key + 1);
-    window.addEventListener("cnfm-sites-refresh", handler);
-    return () => window.removeEventListener("cnfm-sites-refresh", handler);
-  }, []);
-
   const handleLabelPositionChange = useCallback(
     (edgeId: string, payload: { t: number }) => {
       const clampT = Math.min(1, Math.max(0, payload.t));
@@ -465,6 +657,14 @@ export default function AdminTopologyEditor() {
         )
       );
       setDirty(true);
+    },
+    []
+  );
+
+  const handleEdgeHover = useCallback(
+    ({ id, type }: { id: string; type: "enter" | "move" | "leave" }) => {
+      if (type === "enter") setHoveredEdgeId(id);
+      if (type === "leave") setHoveredEdgeId((prev) => (prev === id ? null : prev));
     },
     []
   );
@@ -483,6 +683,23 @@ export default function AdminTopologyEditor() {
       const shape = allowed.includes(edge.type as any)
         ? (edge.type as ViewEdgeData["shape"])
         : "smoothstep";
+      const isHovered = hoveredEdgeId === edge.id;
+      const baseStyle = edge.structural
+        ? STRUCTURAL_EDGE_STYLE
+        : DEFAULT_EDGE_STYLE;
+      const baseWidth =
+        typeof baseStyle?.strokeWidth === "number"
+          ? baseStyle.strokeWidth
+          : undefined;
+      const styleWithHover = isHovered
+        ? {
+            ...baseStyle,
+            stroke: edge.structural ? "#94a3b8" : "#38bdf8",
+            strokeWidth:
+              typeof baseWidth === "number" ? baseWidth + 1 : baseStyle?.strokeWidth,
+            filter: "drop-shadow(0 0 0.45rem rgba(56,189,248,.5))",
+          }
+        : baseStyle;
       return {
         id: edge.id,
         source: edge.source,
@@ -492,7 +709,7 @@ export default function AdminTopologyEditor() {
         label: labelText,
         type: "draggable",
         animated: !!edge.animated,
-        style: edge.structural ? STRUCTURAL_EDGE_STYLE : DEFAULT_EDGE_STYLE,
+        style: styleWithHover,
         labelBgPadding: labelText ? [6, 3] : undefined,
         labelBgBorderRadius: labelText ? 999 : undefined,
         labelBgStyle: labelText
@@ -506,6 +723,7 @@ export default function AdminTopologyEditor() {
               fontSize: 11,
             }
           : undefined,
+        interactionWidth: 28,
         data: {
           baseId: edge.id,
           loadIndex: -1,
@@ -514,10 +732,11 @@ export default function AdminTopologyEditor() {
           labelT: typeof edge.labelT === "number" ? edge.labelT : 0.5,
           labelOffset: edge.labelOffset ?? { x: 0, y: 0 },
           onLabelPositionChange: handleLabelPositionChange,
+           onHoverChange: handleEdgeHover,
         },
       } as ViewEdge;
     });
-  }, [baseEdges, handleLabelPositionChange]);
+  }, [baseEdges, handleLabelPositionChange, hoveredEdgeId, handleEdgeHover]);
 
   const [currentSiteMeta, setCurrentSiteMeta] = useState<{
     id: number;
@@ -542,6 +761,7 @@ export default function AdminTopologyEditor() {
     name: "",
     regionCode: "",
   });
+  const [miniMapVisible, setMiniMapVisible] = useState(true);
   const [sitePickerOpen, setSitePickerOpen] = useState(false);
   const [expandedRegions, setExpandedRegions] = useState<
     Record<string, boolean>
@@ -734,7 +954,7 @@ export default function AdminTopologyEditor() {
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin, siteRefreshKey]);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (!selectedSiteCode) return;
@@ -882,11 +1102,10 @@ export default function AdminTopologyEditor() {
   }, [groupedSites, regions]);
 
   useEffect(() => {
-    setExpandedRegions((prev) => {
+    setExpandedRegions(() => {
       const next: Record<string, boolean> = {};
       groupedSites.forEach((group) => {
-        next[group.code] =
-          typeof prev[group.code] === "boolean" ? prev[group.code] : true;
+        next[group.code] = false;
       });
       return next;
     });
@@ -913,10 +1132,17 @@ export default function AdminTopologyEditor() {
   }, [sitePickerOpen]);
 
   const toggleRegion = useCallback((code: string) => {
-    setExpandedRegions((prev) => ({
-      ...prev,
-      [code]: !prev[code],
-    }));
+    setExpandedRegions((prev) => {
+      const currentlyOpen = !!prev[code];
+      const next: Record<string, boolean> = {};
+      Object.keys(prev).forEach((key) => {
+        next[key] = false;
+      });
+      if (!currentlyOpen) {
+        next[code] = true;
+      }
+      return next;
+    });
   }, []);
 
   const handleSiteSelect = useCallback(
@@ -1005,6 +1231,12 @@ export default function AdminTopologyEditor() {
       changes.forEach((change) => {
         if (change.type === "remove") {
           const baseId = String(change.id).split("::")[0];
+          if (
+            edgeReconnectSnapshot.current &&
+            edgeReconnectSnapshot.current.id === baseId
+          ) {
+            return;
+          }
           baseIdsToRemove.add(baseId);
         }
       });
@@ -1018,10 +1250,69 @@ export default function AdminTopologyEditor() {
           setLabelInput("");
           setNewLoadInput("");
         }
+        if (hoveredEdgeId && baseIdsToRemove.has(hoveredEdgeId)) {
+          setHoveredEdgeId(null);
+        }
       }
     },
-    [selection]
+    [selection, hoveredEdgeId]
   );
+
+  const resolveBaseEdgeId = useCallback((edge: Edge) => {
+    const data = edge.data as ViewEdge["data"] | undefined;
+    if (data?.baseId) return data.baseId;
+    return String(edge.id).split("::")[0];
+  }, []);
+
+  const handleReconnectStart = useCallback(
+    (_: any, edge: Edge) => {
+      edgeReconnectSuccess.current = false;
+      const baseId = resolveBaseEdgeId(edge);
+      const snapshot = baseEdges.find((item) => item.id === baseId);
+      edgeReconnectSnapshot.current = snapshot ? { ...snapshot } : null;
+    },
+    [baseEdges, resolveBaseEdgeId]
+  );
+
+  const handleReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      if (!newConnection.source || !newConnection.target) return;
+      edgeReconnectSuccess.current = true;
+      const baseId = resolveBaseEdgeId(oldEdge);
+      const sh = normalizeHandleId(newConnection.sourceHandle);
+      const th = normalizeHandleId(newConnection.targetHandle);
+      setBaseEdges((edges) =>
+        edges.map((edge) =>
+          edge.id === baseId
+            ? {
+                ...edge,
+                source: newConnection.source!,
+                target: newConnection.target!,
+                sourceHandle: sh,
+                targetHandle: th,
+              }
+            : edge
+        )
+      );
+      if (selection?.type === "edge" && selection.id === baseId) {
+        setSelection({ type: "edge", id: baseId, loadIndex: -1 });
+      }
+      setDirty(true);
+      edgeReconnectSnapshot.current = null;
+    },
+    [resolveBaseEdgeId, selection]
+  );
+
+  const handleReconnectEnd = useCallback(() => {
+    if (!edgeReconnectSuccess.current && edgeReconnectSnapshot.current) {
+      const snapshot = edgeReconnectSnapshot.current;
+      setBaseEdges((edges) =>
+        edges.map((edge) => (edge.id === snapshot.id ? snapshot : edge))
+      );
+    }
+    edgeReconnectSnapshot.current = null;
+    edgeReconnectSuccess.current = false;
+  }, []);
 
   const handleToggleCreateSite = useCallback(() => {
     if (!isSuperAdmin) return;
@@ -1547,7 +1838,8 @@ export default function AdminTopologyEditor() {
     if (!currentSiteMeta || currentSiteMeta.id <= 0) return;
     try {
       setSaving(true);
-      const topology = serializeDraft(nodes, baseEdges);
+      const normalizedNodes = withEnsuredNodeLabels(nodes);
+      const topology = serializeDraft(normalizedNodes, baseEdges);
       await saveTopologyDraft(currentSiteMeta.id, topology, {
         code: currentSiteMeta.code,
         name: currentSiteMeta.name,
@@ -1572,7 +1864,8 @@ export default function AdminTopologyEditor() {
     if (!currentSiteMeta || currentSiteMeta.id <= 0) return;
     try {
       setPublishing(true);
-      const topology = serializeDraft(nodes, baseEdges);
+      const normalizedNodes = withEnsuredNodeLabels(nodes);
+      const topology = serializeDraft(normalizedNodes, baseEdges);
       await publishTopology(currentSiteMeta.id, topology, {
         code: currentSiteMeta.code,
         name: currentSiteMeta.name,
@@ -1813,23 +2106,10 @@ export default function AdminTopologyEditor() {
             className="editor-btn secondary"
             onClick={handleToggleCreateSite}
           >
-            {creatingSite ? "Close new site" : "New site"}
-          </button>
-          <button
-            type="button"
-            className="editor-btn secondary"
-            onClick={handleAddNode}
-            disabled={!selectedSiteCode}
-          >
-            Add node
-          </button>
-          <button
-            type="button"
-            className="editor-btn secondary"
-            onClick={handleAddStandalone}
-            disabled={!selectedSiteCode}
-          >
-            Standalone block
+            <span className="btn-icon">
+              <IconPlus />
+            </span>
+            <span>{creatingSite ? "Close new site" : "New site"}</span>
           </button>
           {isSuperAdmin && (
             <button
@@ -1840,9 +2120,45 @@ export default function AdminTopologyEditor() {
                 deletingSite || !currentSiteMeta || currentSiteMeta.id <= 0
               }
             >
-              {deletingSite ? "Deleting…" : "Delete site"}
+              <span className="btn-icon">
+                <IconTrash />
+              </span>
+              <span>{deletingSite ? "Deleting…" : "Delete site"}</span>
             </button>
           )}
+          <button
+            type="button"
+            className="editor-btn secondary"
+            onClick={handleAddNode}
+            disabled={!selectedSiteCode}
+          >
+            <span className="btn-icon">
+              <IconNodes />
+            </span>
+            <span>Add node</span>
+          </button>
+          <button
+            type="button"
+            className="editor-btn secondary"
+            onClick={handleAddStandalone}
+            disabled={!selectedSiteCode}
+          >
+            <span className="btn-icon">
+              <IconBlock />
+            </span>
+            <span>Standalone block</span>
+          </button>
+          <button
+            type="button"
+            className="editor-btn secondary"
+            onClick={() => setMiniMapVisible((prev) => !prev)}
+            disabled={!selectedSiteCode}
+          >
+            <span className="btn-icon">
+              <IconMapMini />
+            </span>
+            <span>{miniMapVisible ? "Hide mini map" : "Show mini map"}</span>
+          </button>
         </div>
         <div className="toolbar-divider" aria-hidden />
         <div className="toolbar-group">
@@ -1852,7 +2168,10 @@ export default function AdminTopologyEditor() {
             onClick={handleDeleteSelection}
             disabled={!selection}
           >
-            Delete selection
+            <span className="btn-icon">
+              <IconDeleteSelection />
+            </span>
+            <span>Delete selection</span>
           </button>
           <button
             type="button"
@@ -1862,7 +2181,10 @@ export default function AdminTopologyEditor() {
               saving || !dirty || !currentSiteMeta || currentSiteMeta.id <= 0
             }
           >
-            {saving ? "Saving…" : dirty ? "Save draft" : "Draft saved"}
+            <span className="btn-icon">
+              <IconSave />
+            </span>
+            <span>{saving ? "Saving…" : dirty ? "Save draft" : "Draft saved"}</span>
           </button>
           <button
             type="button"
@@ -1870,7 +2192,10 @@ export default function AdminTopologyEditor() {
             onClick={handlePublish}
             disabled={publishing || !currentSiteMeta || currentSiteMeta.id <= 0}
           >
-            {publishing ? "Publishing…" : "Publish"}
+            <span className="btn-icon">
+              <IconPublish />
+            </span>
+            <span>{publishing ? "Publishing…" : "Publish"}</span>
           </button>
         </div>
       </div>
@@ -1940,8 +2265,10 @@ export default function AdminTopologyEditor() {
             onConnect={handleConnect}
             nodesConnectable
             connectionMode={ConnectionMode.Loose}
-            connectionRadius={28}
             connectOnClick
+            reconnectRadius={26}
+            edgesUpdatable
+            defaultEdgeOptions={{ reconnectable: true }}
             isValidConnection={(c) =>
               !!c.source && !!c.target && c.source !== c.target
             }
@@ -1964,8 +2291,11 @@ export default function AdminTopologyEditor() {
             fitView
             className="cnfm-flow"
             proOptions={proOptions}
+            onReconnectStart={handleReconnectStart}
+            onReconnect={handleReconnect}
+            onReconnectEnd={handleReconnectEnd}
           >
-            <MiniMap pannable zoomable />
+            {miniMapVisible && <MiniMap pannable zoomable />}
             <Controls showInteractive={false} />
             <Background
               id="cnfm-grid"
@@ -2490,59 +2820,71 @@ export default function AdminTopologyEditor() {
               {siteListError ? (
                 <p className="editor-modal-error">{siteListError}</p>
               ) : null}
-              {regionGroups.map((group) => (
-                <section
-                  key={group.code}
-                  className={`site-picker-section ${
-                    expandedRegions[group.code] ? "open" : "closed"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className="site-picker-toggle"
-                    onClick={() => toggleRegion(group.code)}
-                    aria-expanded={!!expandedRegions[group.code]}
+              {regionGroups.map((group) => {
+                const isOpen = !!expandedRegions[group.code];
+                const regionId = `region-${group.code}`;
+                const listId = `${regionId}-sites`;
+                return (
+                  <section
+                    key={group.code}
+                    className={`site-picker-section ${isOpen ? "open" : "closed"}`}
                   >
-                    <span className="region-name">
-                      {group.name || group.code}
-                    </span>
-                    <span className="region-count">
-                      {group.sites.length
-                        ? `${group.sites.length} site${
-                            group.sites.length === 1 ? "" : "s"
-                          }`
-                        : "No sites"}
-                    </span>
-                    <span className="region-caret" aria-hidden="true">
-                      ▾
-                    </span>
-                  </button>
-                  <div className="site-picker-list">
-                    {group.sites.length ? (
-                      group.sites.map((site) => (
-                        <button
-                          type="button"
-                          key={site.id}
-                          className={`site-picker-item ${
-                            selectedSiteCode === site.code ? "active" : ""
-                          }`}
-                          onClick={() => handleSiteSelect(site)}
-                        >
-                          <span className="site-name">{site.name}</span>
-                          <span className="site-meta">
-                            {site.code}
-                            {selectedSiteCode === site.code ? (
-                              <span className="site-selected">Selected</span>
-                            ) : null}
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="site-picker-empty">No sites</p>
+                    <button
+                      type="button"
+                      className="site-picker-toggle"
+                      onClick={() => toggleRegion(group.code)}
+                      aria-expanded={isOpen}
+                      aria-controls={listId}
+                      id={regionId}
+                    >
+                      <span className="region-name">
+                        {group.name || group.code}
+                      </span>
+                      <span className="region-count">
+                        {group.sites.length
+                          ? `${group.sites.length} site${
+                              group.sites.length === 1 ? "" : "s"
+                            }`
+                          : "No sites"}
+                      </span>
+                      <span className="region-caret" aria-hidden="true">
+                        ▾
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div
+                        className="site-picker-list"
+                        id={listId}
+                        role="region"
+                        aria-labelledby={regionId}
+                      >
+                        {group.sites.length ? (
+                          group.sites.map((site) => (
+                            <button
+                              type="button"
+                              key={site.id}
+                              className={`site-picker-item ${
+                                selectedSiteCode === site.code ? "active" : ""
+                              }`}
+                              onClick={() => handleSiteSelect(site)}
+                            >
+                              <span className="site-name">{site.name}</span>
+                              <span className="site-meta">
+                                {site.code}
+                                {selectedSiteCode === site.code ? (
+                                  <span className="site-selected">Selected</span>
+                                ) : null}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="site-picker-empty">No sites</p>
+                        )}
+                      </div>
                     )}
-                  </div>
-                </section>
-              ))}
+                  </section>
+                );
+              })}
               {siteListLoading && (
                 <p className="site-picker-loading">Loading sites…</p>
               )}
