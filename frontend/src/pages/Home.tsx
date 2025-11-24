@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Home.css";
 import { loadUser } from "../services/auth";
+import {
+  getRegions,
+  listPublishedSiteSummaries,
+  type SiteSummary,
+} from "../services/network";
 
 type Dot = { x: number; y: number };
 type Theme = "light" | "dark";
@@ -26,6 +31,19 @@ export default function Home() {
   }, []);
 
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [liveStats, setLiveStats] = useState<{
+    regions: string[];
+    publishedSites: number;
+    sampleSites: SiteSummary[];
+    loading: boolean;
+    error: string | null;
+  }>({
+    regions: [],
+    publishedSites: 0,
+    sampleSites: [],
+    loading: true,
+    error: null,
+  });
   const handleLaunchViewer = useCallback(() => {
     const currentUser = loadUser();
     if (currentUser) {
@@ -58,10 +76,68 @@ export default function Home() {
     };
   }, [theme]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setLiveStats((prev) => ({ ...prev, loading: true, error: null }));
+    (async () => {
+      try {
+        const [regions, summaries] = await Promise.all([
+          getRegions(),
+          listPublishedSiteSummaries(),
+        ]);
+        if (cancelled) return;
+        setLiveStats({
+          regions: regions.map((r) => r.name),
+          publishedSites: summaries.length,
+          sampleSites: summaries.slice(0, 6),
+          loading: false,
+          error: null,
+        });
+      } catch (err) {
+        console.error("home live stats error:", err);
+        if (cancelled) return;
+        setLiveStats((prev) => ({
+          ...prev,
+          loading: false,
+          error: "Live stats are temporarily unavailable.",
+        }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const regionSubtitle = liveStats.loading
+    ? "Fetching regions…"
+    : liveStats.regions.length
+    ? liveStats.regions.join(" · ")
+    : liveStats.error || "No regions found";
+  const siteSubtitle = liveStats.loading
+    ? "Counting published sites…"
+    : liveStats.publishedSites
+    ? `${liveStats.publishedSites} sites in the viewer.`
+    : liveStats.error || "No published sites yet.";
+
   const statCards = [
-    { label: "REGIONS", value: "3", sub: "Luzon · Visayas · Mindanao" },
-    { label: "LIVE SITES", value: "90+", sub: "Core · Metro · Edge" },
-    { label: "SIM SCENARIOS", value: "40+", sub: "Outage + Recovery drills" },
+    {
+      label: "REGIONS",
+      value: liveStats.loading
+        ? "…"
+        : liveStats.regions.length
+        ? String(liveStats.regions.length)
+        : "0",
+      sub: regionSubtitle,
+    },
+    {
+      label: "PUBLISHED SITES",
+      value: liveStats.loading
+        ? "…"
+        : liveStats.publishedSites
+        ? String(liveStats.publishedSites)
+        : "0",
+      sub: siteSubtitle,
+    },
     { label: "TECH STACK", value: "R + TS", sub: "React · Node.js · MySQL" },
   ];
 

@@ -30,6 +30,10 @@ import TopologyNode, { type TopologyNodeData } from "./TopologyNode";
 import DraggableLabelEdge from "./edges/DraggableLabelEdge";
 import "./AdminTopologyViewer.css";
 import { loadUser } from "../../services/auth";
+import {
+  hasSharedLoadTechnology,
+  normalizeLoadLabel,
+} from "../../utils/loadMatching";
 
 const DEFAULT_EDGE_STYLE = { strokeWidth: 4, stroke: "#2563eb" };
 const STRUCTURAL_EDGE_STYLE = {
@@ -258,12 +262,21 @@ function findAlternatives(
     if (!canAlt) continue;
 
     const matching: string[] = [];
+    const seenMatches = new Set<string>();
     for (const a of off.load) {
+      const normA = normalizeLoadLabel(a);
+      if (!normA) continue;
       for (const b of conn.load) {
-        if (a.toLowerCase() === b.toLowerCase()) {
-          if (!matching.includes(b)) matching.push(b);
-        } else if (sharesTech(a, b)) {
-          if (!matching.includes(b)) matching.push(b);
+        const normB = normalizeLoadLabel(b);
+        if (!normB) continue;
+        if (
+          normA === normB ||
+          hasSharedLoadTechnology(normA, normB)
+        ) {
+          if (!seenMatches.has(normB)) {
+            seenMatches.add(normB);
+            matching.push(b);
+          }
         }
       }
     }
@@ -272,26 +285,6 @@ function findAlternatives(
     }
   }
   return out;
-}
-
-function sharesTech(a: string, b: string) {
-  const techs = [
-    "DWDM COHERENT MAIN",
-    "DWDM COHERENT",
-    "DWDM LAYER 1",
-    "DWDM LAYER 2",
-    "COHERENT SPAN",
-    "GALACTUS EP",
-    "GALACTUS DP",
-    "DODRIO/Nokia",
-    "COHERENT",
-    "DWDM",
-  ];
-  return techs.some(
-    (tech) =>
-      a.toLowerCase().includes(tech.toLowerCase()) &&
-      b.toLowerCase().includes(tech.toLowerCase())
-  );
 }
 
 function titleFor(key: string, connections: Map<string, NamedConnection>) {
@@ -609,18 +602,21 @@ export default function AdminTopologyViewer({
   );
   const handleClosePicker = useCallback(() => setPickerOpen(false), []);
   const fetchSiteSummaries = useCallback(async (): Promise<SiteSummary[]> => {
-    if (isAdminMode) {
-      const list = await listAdminSites();
-      return list.map(({ id, code, name, regionCode, regionName }) => ({
-        id,
-        code,
-        name,
-        regionCode,
-        regionName,
-      }));
+    if (!isAdminMode || isSuperAdmin) {
+      return await listPublishedSiteSummaries();
     }
-    return await listPublishedSiteSummaries();
-  }, [isAdminMode]);
+
+    const [adminSites, publishedSites] = await Promise.all([
+      listAdminSites(),
+      listPublishedSiteSummaries(),
+    ]);
+    const allowedCodes = new Set(
+      adminSites.map((site) => site.code.trim().toUpperCase())
+    );
+    return publishedSites.filter((site) =>
+      allowedCodes.has(site.code.trim().toUpperCase())
+    );
+  }, [isAdminMode, isSuperAdmin]);
 
   useEffect(() => {
     document.title =

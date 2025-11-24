@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { getSiteTopology } from "../services/network";
 import type { Connection, SiteTopology } from "../types/topology";
 import { extractServiceNames } from "../types/topology";
+import {
+  hasSharedLoadTechnology,
+  normalizeLoadLabel,
+} from "../utils/loadMatching";
 import "./Visayas/topology.css";
 
 type AltInfo = { isAlternative: boolean; matchingLoad: string[] };
@@ -534,10 +538,21 @@ function findAlternatives(
     if (!canAlt) continue;
 
     const matching: string[] = [];
+    const seenMatches = new Set<string>();
     for (const a of off.load) {
+      const normA = normalizeLoadLabel(a);
+      if (!normA) continue;
       for (const b of c.load) {
-        if (equalsCI(a, b) || sharesTech(a, b)) {
-          if (!matching.includes(b)) matching.push(b);
+        const normB = normalizeLoadLabel(b);
+        if (!normB) continue;
+        if (
+          normA === normB ||
+          hasSharedLoadTechnology(normA, normB)
+        ) {
+          if (!seenMatches.has(normB)) {
+            seenMatches.add(normB);
+            matching.push(b);
+          }
         }
       }
     }
@@ -545,40 +560,6 @@ function findAlternatives(
       out[c.key] = { isAlternative: true, matchingLoad: matching };
   }
   return out;
-}
-
-function equalsCI(a: string, b: string) {
-  return a.localeCompare(b, undefined, { sensitivity: "accent" }) === 0;
-}
-
-function sharesTech(a: string, b: string) {
-  const techs = [
-    "DWDM LAYER 1 MAIN",
-    "DWDM LAYER 2 MAIN",
-    "DWDM LAYER 1 SPAN",
-    "DWDM LAYER 2 SPAN",
-    "DWDM LAYER 1",
-    "DWDM MAIN",
-    "DWDM SPAN",
-    "DWDM COHERENT MAIN",
-    "DWDM COHERENT",
-    "DWDM",
-    "COHERENT MAIN",
-    "COHERENT SPAN",
-    "COHERENT",
-    "GALACTUS EP",
-    "GALACTUS DP",
-    "DODRIO/Nokia",
-    "NOKIA EP",
-    "NOKIA DP",
-    "EP",
-    "DP",
-  ];
-  const A = a.toLowerCase();
-  const B = b.toLowerCase();
-  return techs.some(
-    (t) => A.includes(t.toLowerCase()) && B.includes(t.toLowerCase())
-  );
 }
 
 function titleFor(key: string, conns: Connection[]) {
