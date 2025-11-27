@@ -1687,6 +1687,62 @@ app.post(
 );
 
 app.put(
+  "/api/admin/users/:userId",
+  authRequired,
+  requireRole("admin"),
+  async (req, res) => {
+    const userId = Number(req.params.userId);
+    if (!Number.isFinite(userId) || userId <= 0) {
+      return res.status(400).json({ message: "invalid_user_id" });
+    }
+
+    const safeFirstname =
+      typeof req.body?.firstname === "string" ? req.body.firstname.trim() : "";
+    const safeLastname =
+      typeof req.body?.lastname === "string" ? req.body.lastname.trim() : "";
+    const safeUsername =
+      typeof req.body?.username === "string" ? req.body.username.trim() : "";
+
+    if (!safeUsername) {
+      return res.status(400).json({ message: "Username is required." });
+    }
+
+    try {
+      const [existing] = await query(
+        "SELECT id FROM users WHERE id = ? LIMIT 1",
+        [userId]
+      );
+      if (!existing) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      const dup = await query(
+        "SELECT id FROM users WHERE LOWER(username) = LOWER(?) AND id <> ? LIMIT 1",
+        [safeUsername, userId]
+      );
+      if (dup.length) {
+        return res
+          .status(409)
+          .json({ message: "Username is already taken." });
+      }
+
+      await query(
+        `UPDATE users
+            SET firstname = ?, lastname = ?, username = ?
+          WHERE id = ?`,
+        [safeFirstname, safeLastname, safeUsername, userId]
+      );
+
+      const updated = await fetchUserWithSites(userId);
+      res.json(updated);
+    } catch (err) {
+      console.error("admin update user profile error:", err);
+      res.status(500).json({ message: "db_error" });
+    }
+  }
+);
+
+app.put(
   "/api/admin/users/:userId/sites",
   authRequired,
   requireRole("admin"),

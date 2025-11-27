@@ -22,16 +22,16 @@ import { getRegions, getSiteTopology } from "../../services/network";
 import { loadUser } from "../../services/auth";
 import type { PlaceNode, SiteTopology } from "../../types/topology";
 import {
+  addSiteService,
   createAdminSite,
+  deleteAdminSite,
+  deleteSiteService,
   fetchTopologyDraft,
   listAdminSites,
-  saveTopologyDraft,
-  publishTopology,
-  addSiteService,
-  updateSiteService,
-  deleteSiteService,
-  deleteAdminSite,
   listLoadTags,
+  publishTopology,
+  saveTopologyDraft,
+  updateSiteService,
   type AdminSiteSummary,
 } from "../../services/adminTopology";
 import TopologyNode, { type TopologyNodeData } from "./TopologyNode";
@@ -364,6 +364,14 @@ function makeId(prefix: string) {
 }
 
 function showSuccessToast(title: string) {
+  return fireToast("success", title);
+}
+
+function showErrorToast(title: string) {
+  return fireToast("error", title);
+}
+
+function fireToast(icon: "success" | "error", title: string) {
   const Toast = Swal.mixin({
     toast: true,
     position: "top-end",
@@ -375,10 +383,7 @@ function showSuccessToast(title: string) {
       toast.onmouseleave = Swal.resumeTimer;
     },
   });
-  return Toast.fire({
-    icon: "success",
-    title,
-  });
+  return Toast.fire({ icon, title });
 }
 
 function ensureNode(
@@ -863,6 +868,9 @@ export default function AdminTopologyEditor() {
         }
       } catch (err) {
         console.error("load tag list error:", err);
+        if (!cancelled) {
+          await showErrorToast("Failed to load load-tag suggestions.");
+        }
       }
     })();
     return () => {
@@ -883,6 +891,7 @@ export default function AdminTopologyEditor() {
         }
       } catch (err) {
         console.error("regions load error:", err);
+        await showErrorToast("Failed to load regions.");
       }
     })();
   }, []);
@@ -984,6 +993,11 @@ export default function AdminTopologyEditor() {
             }
           } catch (draftErr) {
             console.error("draft fetch error:", draftErr);
+            if (!cancelled) {
+              await showErrorToast(
+                "Failed to load saved draft. Showing published view."
+              );
+            }
           }
         }
 
@@ -1945,7 +1959,12 @@ export default function AdminTopologyEditor() {
       setCreatingSite(false);
       setCreateSiteForm((prev) => ({ ...prev, name: "" }));
     } catch (err: any) {
-      alert(err?.message || "Failed to create site.");
+      const message = err?.message || "Failed to create site.";
+      if (message.toLowerCase().includes("exist")) {
+        await showErrorToast(message);
+      } else {
+        alert(message);
+      }
     }
   }, [createSiteForm, regions]);
 
@@ -2012,7 +2031,7 @@ export default function AdminTopologyEditor() {
           </p>
         </div>
         <div className="editor-site-controls">
-          {isSuperAdmin ? (
+          {isSuperAdmin || (visibleSiteOptions.length > 1 && !isSuperAdmin) ? (
             <button
               type="button"
               className="editor-site-button"
@@ -2029,7 +2048,9 @@ export default function AdminTopologyEditor() {
                       selectedSiteOption.regionCode
                     : siteListLoading
                     ? "Loading sites…"
-                    : "Choose a site to load topology"}
+                    : isSuperAdmin
+                    ? "Choose a site to load topology"
+                    : "Select from your assigned sites"}
                 </span>
               </div>
               <span className="editor-site-button-caret" aria-hidden="true">
@@ -2101,16 +2122,18 @@ export default function AdminTopologyEditor() {
 
       <div className="editor-toolbar" role="toolbar">
         <div className="toolbar-group">
-          <button
-            type="button"
-            className="editor-btn secondary"
-            onClick={handleToggleCreateSite}
-          >
-            <span className="btn-icon">
-              <IconPlus />
-            </span>
-            <span>{creatingSite ? "Close new site" : "New site"}</span>
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className="editor-btn secondary"
+              onClick={handleToggleCreateSite}
+            >
+              <span className="btn-icon">
+                <IconPlus />
+              </span>
+              <span>{creatingSite ? "Close new site" : "New site"}</span>
+            </button>
+          )}
           {isSuperAdmin && (
             <button
               type="button"

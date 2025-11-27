@@ -571,8 +571,8 @@ export default function AdminTopologyViewer({
   const currentUser = useMemo(() => loadUser(), []);
   const isAdminMode = mode === "admin";
   const isSuperAdmin = currentUser?.role === "super_admin";
-  const allowSitePicker = isAdminMode && isSuperAdmin;
   const [siteOptions, setSiteOptions] = useState<SiteSummary[]>([]);
+  const allowSitePicker = isAdminMode && (isSuperAdmin || siteOptions.length > 1);
   const [selectedSiteCode, setSelectedSiteCode] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<SiteTopology | null>(null);
   const [flow, setFlow] = useState<FlowBundle>({ nodes: [], edges: [] });
@@ -698,10 +698,13 @@ export default function AdminTopologyViewer({
   }, [pickerOpen, handleClosePicker]);
 
   useEffect(() => {
-    if (!allowSitePicker && pickerOpen) {
-      setPickerOpen(false);
+    if (isAdminMode) {
+      const shouldHavePicker = isSuperAdmin || siteOptions.length > 1;
+      if (!shouldHavePicker && pickerOpen) {
+        setPickerOpen(false);
+      }
     }
-  }, [allowSitePicker, pickerOpen]);
+  }, [isAdminMode, isSuperAdmin, siteOptions.length, pickerOpen]);
   useEffect(() => {
     if (!isAdminMode) return;
     if (
@@ -1270,13 +1273,16 @@ export default function AdminTopologyViewer({
                   aria-haspopup="dialog"
                   aria-expanded={pickerOpen}
                 >
-                  <span>
+                  <span className="viewer-select-label">
                     {selectedSiteCode && selectedSiteOption
                       ? `${selectedSiteOption.name} · ${
                           selectedSiteOption.regionName ||
                           selectedSiteOption.regionCode
                         }`
                       : "Select site…"}
+                  </span>
+                  <span className="viewer-select-caret" aria-hidden="true">
+                    ▾
                   </span>
                 </button>
                 <div className="viewer-status-group">

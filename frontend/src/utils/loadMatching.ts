@@ -1,29 +1,3 @@
-const LOAD_TECH_KEYWORDS = [
-  "DWDM COHERENT MAIN",
-  "DWDM COHERENT SPAN",
-  "DWDM COHERENT",
-  "DWDM LAYER 1 MAIN",
-  "DWDM LAYER 1 SPAN",
-  "DWDM LAYER 1",
-  "DWDM LAYER 2 MAIN",
-  "DWDM LAYER 2 SPAN",
-  "DWDM LAYER 2",
-  "DWDM MAIN",
-  "DWDM SPAN",
-  "COHERENT MAIN",
-  "COHERENT SPAN",
-  "GALACTUS EP",
-  "GALACTUS DP",
-  "DODRIO/NOKIA",
-  "DODRIO",
-  "NOKIA EP",
-  "NOKIA DP",
-] as const;
-
-const KEYWORD_MATCHERS = LOAD_TECH_KEYWORDS.map((token) =>
-  token.toLowerCase()
-);
-
 const PASS_THROUGH_PATTERN = /\s*\(pass through\)/gi;
 const MULTISPACE_PATTERN = /\s+/g;
 
@@ -53,8 +27,5 @@ export function hasSharedLoadTechnology(
   normalizedB: string
 ): boolean {
   if (!normalizedA || !normalizedB) return false;
-  return KEYWORD_MATCHERS.some(
-    (token) =>
-      normalizedA.includes(token) && normalizedB.includes(token)
-  );
+  return normalizedA === normalizedB;
 }
