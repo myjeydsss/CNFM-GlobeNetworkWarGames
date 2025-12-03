@@ -1845,6 +1845,46 @@ app.put(
   }
 );
 
+app.delete(
+  "/api/admin/users/:userId",
+  authRequired,
+  requireRole("admin"),
+  async (req, res) => {
+    const userId = Number(req.params.userId);
+    if (!Number.isFinite(userId) || userId <= 0) {
+      return res.status(400).json({ message: "invalid_user_id" });
+    }
+
+    try {
+      await runInTransaction(async (connQuery) => {
+        const [user] = await connQuery(
+          "SELECT id, role FROM users WHERE id = ? LIMIT 1",
+          [userId]
+        );
+        if (!user) {
+          const err = new Error("User not found.");
+          err.statusCode = 404;
+          throw err;
+        }
+        if (user.role !== "site_admin") {
+          const err = new Error("Only site admins can be deleted.");
+          err.statusCode = 400;
+          throw err;
+        }
+
+        await connQuery("DELETE FROM site_admins WHERE user_id = ?", [userId]);
+        await connQuery("DELETE FROM users WHERE id = ?", [userId]);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("admin delete user error:", err);
+      const status = err.statusCode || 500;
+      res.status(status).json({ message: err.message || "db_error" });
+    }
+  }
+);
+
 // GET /api/admin/load-tags : distinct load tags for reuse
 app.get(
   "/api/admin/load-tags",

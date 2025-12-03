@@ -9,8 +9,12 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLayout from "./components/admin/AdminLayout";
 import ProtectedRoute from "./route/ProtectedRoute"; // ⬅️ NEW
-import Denied from "./pages/Denied"; // ⬅️ NEW
 import PublishedTopology from "./pages/PublishedTopology";
+import Status401 from "./components/status/Status401";
+import Status404 from "./components/status/Status404";
+import Status500 from "./components/status/Status500";
+import StatusMaintenance from "./components/status/Maintenance";
+import StatusComingSoon from "./components/status/ComingSoon";
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -26,13 +30,19 @@ export default function App() {
       {/* PUBLIC / GUEST APP */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="denied" element={<Denied />} /> {/* ⬅️ NEW */}
         <Route path="luzon" element={<Placeholder title="Luzon" />} />
         <Route path="mindanao" element={<Placeholder title="Mindanao" />} />
         <Route path="all-sites" element={<Placeholder title="All Sites" />} />
         <Route path="topology">
           <Route index element={<PublishedTopology />} />
           <Route path=":siteCode" element={<PublishedTopology />} />
+        </Route>
+        <Route path="status">
+          <Route path="comingsoon" element={<StatusComingSoon />} />
+          <Route path="maintenance" element={<StatusMaintenance />} />
+          <Route path="401" element={<Status401 />} />
+          <Route path="404" element={<Status404 />} />
+          <Route path="500" element={<Status500 />} />
         </Route>
       </Route>
 

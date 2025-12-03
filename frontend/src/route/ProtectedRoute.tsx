@@ -70,7 +70,7 @@ export default function ProtectedRoute({
   }, [requireRole]);
 
   if (state === "checking") return null; // or a spinner
-  if (state === "denied") return <Navigate to="/denied" replace />;
+  if (state === "denied") return <Navigate to="/status/401" replace />;
 
   const mustReset = user?.mustChangePassword;
   const onSettingsPage = location.pathname.startsWith("/admin/settings");
