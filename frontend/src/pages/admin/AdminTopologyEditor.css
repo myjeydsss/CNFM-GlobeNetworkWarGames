@@ -39,9 +39,9 @@
 .topology-editor-shell{
   display:flex;
   flex-direction:column;
-  gap:18px;
-  height:calc(100vh - 40px);
-  padding:20px 24px 24px;
+  gap:14px;
+  height:calc(100vh - 24px);
+  padding:12px 16px 16px;
   background:var(--editor-shell-bg);
   color:var(--editor-text);
 }
@@ -432,10 +432,70 @@ body.theme-dark .editor-btn.danger{
 
 .editor-main{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 360px;
-  gap:20px;
+  grid-template-columns:minmax(0,1.15fr) 10px minmax(320px, 30vw);
+  gap:12px;
   flex:1 1 auto;
   min-height:0;
+  width:100%;
+}
+.editor-main.stacked{
+  grid-template-columns:1fr;
+}
+.editor-main.stacked .editor-resize{
+  display:none;
+}
+.editor-resize{
+  width:10px;
+  cursor:col-resize;
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+  position:relative;
+}
+.editor-resize::after{
+  content:"";
+  width:2px;
+  border-radius:999px;
+  background:rgba(148,163,184,.35);
+  opacity:.8;
+  transition:opacity .15s ease, background .15s ease;
+}
+.editor-resize::before{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:8px;
+  height:36px;
+  border-radius:8px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(148,163,184,.65),
+      rgba(148,163,184,.65) 6px,
+      transparent 6px,
+      transparent 10px
+    );
+  box-shadow:0 0 0 1px rgba(148,163,184,.25), inset 0 0 0 1px rgba(7,12,22,.35);
+  pointer-events:none;
+}
+.editor-resize:hover::after,
+.editor-resize:active::after{
+  background:rgba(59,130,246,.65);
+  opacity:1;
+}
+.editor-resize:hover::before,
+.editor-resize:active::before{
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(59,130,246,.85),
+      rgba(59,130,246,.85) 6px,
+      transparent 6px,
+      transparent 10px
+    );
+  box-shadow:0 0 0 1px rgba(59,130,246,.35), inset 0 0 0 1px rgba(7,12,22,.4);
 }
 
 .editor-canvas{
@@ -447,7 +507,7 @@ body.theme-dark .editor-btn.danger{
   box-shadow:var(--editor-canvas-shadow);
   display:flex;
   flex-direction:column;
-  min-height:560px;
+  min-height:calc(100vh - 220px);
 }
 
 .editor-canvas .react-flow{
@@ -481,10 +541,11 @@ body.theme-dark .editor-btn.danger{
   display:grid;
   gap:16px;
   align-content:start;
-  min-width:0;
+  min-width:320px;
+  max-width:720px;
   align-self:stretch;
   overflow-y:auto;
-  padding-right:6px;
+  padding-right:4px;
 }
 
 .editor-card{
@@ -1406,7 +1467,9 @@ body.theme-dark .editor-btn.danger{
 @media (max-width:1180px){
   .editor-main{
     grid-template-columns:1fr;
+    gap:12px;
   }
+  .editor-resize{ display:none; }
   .editor-sidebar{
     order:-1;
   }

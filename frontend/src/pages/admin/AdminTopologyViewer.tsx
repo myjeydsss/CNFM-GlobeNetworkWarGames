@@ -594,6 +594,12 @@ export default function AdminTopologyViewer({
   const [activeTheme, setActiveTheme] = useState<"light" | "dark">(
     resolveInitialTheme
   );
+  const [sidebarWidth, setSidebarWidth] = useState(360);
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1440
+  );
+  const resizingRef = useRef(false);
+  const layoutRef = useRef<HTMLDivElement | null>(null);
   // track previous role to reset guest theme after logout
   const previousRole = useRef<string | null>(currentUser?.role || null);
   const selectedSiteOption = useMemo(
@@ -648,14 +654,21 @@ export default function AdminTopologyViewer({
         syncUser();
       }
     };
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        setWindowWidth(window.innerWidth);
+      }
+    };
     window.addEventListener("cnfm-auth-changed", syncUser as EventListener);
     window.addEventListener("storage", storageHandler);
+    window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener(
         "cnfm-auth-changed",
         syncUser as EventListener
       );
       window.removeEventListener("storage", storageHandler);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -848,7 +861,7 @@ export default function AdminTopologyViewer({
       }
     });
     return () => cancelAnimationFrame(id);
-  }, [reactFlowInstance, flow.nodes, flow.edges, selectedSiteCode]);
+  }, [reactFlowInstance, flow.nodes, flow.edges, selectedSiteCode, sidebarWidth]);
 
   useEffect(() => {
     if (!selectedSite) {
@@ -868,6 +881,32 @@ export default function AdminTopologyViewer({
     }
     setAltLookup(next);
   }, [offline, selectedSite]);
+
+  // Sidebar resize drag
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const rect = layoutRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const available = rect.width;
+      const desired = rect.right - e.clientX;
+      const min = 280;
+      const max = Math.min(520, available - 520); // leave space for canvas
+      const next = Math.min(Math.max(desired, min), Math.max(min, max));
+      if (Number.isFinite(next)) {
+        setSidebarWidth(next);
+      }
+    };
+    const onUp = () => {
+      resizingRef.current = false;
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
 
   const nodeNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -1279,6 +1318,15 @@ export default function AdminTopologyViewer({
     }
   }, []);
 
+  const isSingleColumn = windowWidth < 1080;
+  const layoutStyle = !isSingleColumn
+    ? {
+        gridTemplateColumns: `minmax(0, 1fr) 10px ${Math.round(
+          sidebarWidth
+        )}px`,
+      }
+    : undefined;
+
   return (
     <div
       className={`topology-viewer-shell ${
@@ -1430,7 +1478,11 @@ export default function AdminTopologyViewer({
         </div>
       </header>
 
-      <div className="viewer-layout">
+      <div
+        ref={layoutRef}
+        className={`viewer-layout ${isSingleColumn ? "stacked" : ""}`}
+        style={layoutStyle}
+      >
         <div className="viewer-canvas" ref={canvasRef}>
           <div className="viewer-toolbar">
             <div className="viewer-legend">
@@ -1514,6 +1566,18 @@ export default function AdminTopologyViewer({
             </div>
           )}
         </div>
+
+        {!isSingleColumn && (
+          <div
+            className="viewer-resize"
+            role="separator"
+            aria-orientation="vertical"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              resizingRef.current = true;
+            }}
+          />
+        )}
 
         <aside className="viewer-panel">
           <h2>Site details</h2>

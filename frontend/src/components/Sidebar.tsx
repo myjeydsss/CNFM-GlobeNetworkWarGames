@@ -154,10 +154,7 @@ export function applyThemeVars(theme: "light" | "dark") {
     root.style.setProperty("--viewer-edge-structural", "rgba(148,163,184,.45)");
     root.style.setProperty("--viewer-edge-glow", "rgba(37,99,235,.25)");
     root.style.setProperty("--viewer-edge-glow-alt", "rgba(16,185,129,.28)");
-    root.style.setProperty(
-      "--viewer-edge-glow-offline",
-      "rgba(220,38,38,.28)"
-    );
+    root.style.setProperty("--viewer-edge-glow-offline", "rgba(220,38,38,.28)");
     root.style.setProperty("--viewer-edge-label-bg", "#fde68a");
     root.style.setProperty("--viewer-edge-label-border", "#f59e0b");
     root.style.setProperty("--viewer-edge-label-text", "#1f2937");
@@ -644,33 +641,6 @@ export default function Sidebar() {
                 </div>
               );
             })}
-
-            {/* All Sites */}
-            <NavLink
-              to="/all-sites"
-              end
-              className={({ isActive }) =>
-                ["sb-link", "sb-top-link", isActive ? "active" : ""]
-                  .filter(Boolean)
-                  .join(" ")
-              }
-              title="All Sites"
-            >
-              <span className="sb-ico" aria-hidden>
-                <svg
-                  className="ico-all"
-                  viewBox="0 0 24 24"
-                  width="22"
-                  height="22"
-                >
-                  <path
-                    d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm6.93 7h-3.18a14.6 14.6 0 0 0-1.17-4.22A8.02 8.02 0 0 1 18.93 9ZM12 4c.87 1.3 1.5 3.12 1.8 5H10.2C10.5 7.12 11.13 5.3 12 4ZM7.42 4.78A14.6 14.6 0 0 0 6.25 9H3.07a8.02 8.02 0 0 1 4.35-4.22ZM3.07 11H6.2c.12 1.42.45 2.8.98 4.02L4.4 18.81A8 8 0 0 1 3.07 11Zm4.35 8.22 2.78-3.2c.55.96 1.22 1.82 2 2.52-.63.29-1.33.46-2.1.46a8.02 8.02 0 0 1-2.68-.78ZM12 20c-.87-1.3-1.5-3.12-1.8-5h3.6c-.3 1.88-.93 3.7-1.8 5Zm2.48-.5c.67-.81 1.24-1.83 1.67-3l3.02.83A8.02 8.02 0 0 1 14.48 19.5ZM17.8 11h3.13a8 8 0 0 1-1.23 4.64l-2.78-.77c.5-1.16.83-2.52.88-3.87ZM8.7 11h6.6c-.11 1.59-.5 3.12-1.12 4.43h-4.36C9.2 14.12 8.81 12.59 8.7 11Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </span>
-              <span className="sb-label">All Sites</span>
-            </NavLink>
           </nav>
 
           <div className="sb-spacer" />

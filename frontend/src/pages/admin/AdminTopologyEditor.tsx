@@ -13,6 +13,7 @@ import ReactFlow, {
   Node,
   NodeChange,
   ReactFlowInstance,
+  getRectOfNodes,
   useNodesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
@@ -619,6 +620,12 @@ export default function AdminTopologyEditor() {
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   const edgeReconnectSuccess = useRef(false);
   const edgeReconnectSnapshot = useRef<BaseEdge | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(360);
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1440
+  );
+  const layoutRef = useRef<HTMLDivElement | null>(null);
+  const resizingRef = useRef(false);
 
   useEffect(() => {
     setBaseEdges((edges) => sanitizeEdges(edges));
@@ -630,6 +637,49 @@ export default function AdminTopologyEditor() {
       prev.filter((id) => siteOptions.some((site) => site.id === id))
     );
   }, [siteOptions]);
+
+  // Sidebar resize handlers
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        setWindowWidth(window.innerWidth);
+      }
+    };
+    const onMove = (e: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const rect = layoutRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const available = rect.width;
+      const desired = rect.right - e.clientX;
+      const min = 340;
+      const max = Math.max(min, Math.min(620, available - 640));
+      const next = Math.min(Math.max(desired, min), max);
+      if (Number.isFinite(next)) {
+        setSidebarWidth(next);
+      }
+    };
+    const onUp = () => {
+      resizingRef.current = false;
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        setWindowWidth(window.innerWidth);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleLabelPositionChange = useCallback(
     (edgeId: string, payload: { t: number }) => {
@@ -1166,15 +1216,29 @@ export default function AdminTopologyEditor() {
   useEffect(() => {
     if (!reactFlowInstance) return;
     if (!nodes.length && !viewEdges.length) return;
-    const timeout = setTimeout(() => {
+    const id = requestAnimationFrame(() => {
       try {
-        reactFlowInstance.fitView({ padding: 0.18, duration: 320 });
+        const bounds = getRectOfNodes(nodes as any);
+        const hasSize =
+          Number.isFinite(bounds.width) &&
+          Number.isFinite(bounds.height) &&
+          bounds.width > 0 &&
+          bounds.height > 0;
+        const padding = 0.08;
+        if (hasSize) {
+          reactFlowInstance.fitBounds(bounds, {
+            padding,
+            duration: 420,
+          });
+        } else {
+          reactFlowInstance.fitView({ padding, duration: 420 });
+        }
       } catch (e) {
         console.warn("fitView failed", e);
       }
-    }, 40);
-    return () => clearTimeout(timeout);
-  }, [reactFlowInstance, nodes.length, viewEdges.length]);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [reactFlowInstance, nodes, viewEdges, sidebarWidth]);
 
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -1955,6 +2019,19 @@ export default function AdminTopologyEditor() {
     []
   );
 
+  const isSingleColumn = windowWidth < 1180;
+  const clampedSidebar = Math.min(
+    Math.max(sidebarWidth, 340),
+    Math.max(360, Math.min(580, windowWidth - 620))
+  );
+  const layoutStyle = !isSingleColumn
+    ? {
+        gridTemplateColumns: `minmax(0, 1fr) 10px ${Math.round(
+          clampedSidebar
+        )}px`,
+      }
+    : undefined;
+
   const handleCreateSite = useCallback(async () => {
     if (!isSuperAdmin) return;
     const trimmedName = createSiteForm.name.trim();
@@ -2305,7 +2382,11 @@ export default function AdminTopologyEditor() {
         </section>
       )}
 
-      <div className="editor-main">
+      <div
+        ref={layoutRef}
+        className={`editor-main ${isSingleColumn ? "stacked" : ""}`}
+        style={layoutStyle}
+      >
         <div className="editor-canvas">
           <ReactFlow
             nodes={nodes}
@@ -2383,11 +2464,26 @@ export default function AdminTopologyEditor() {
               <div className="canvas-empty">
                 <p>No topology data loaded for this site yet.</p>
                 <p>Use the builder tools to start drafting a layout.</p>
-              </div>
-            )}
+            </div>
+          )}
         </div>
 
-        <aside className="editor-sidebar">
+        {!isSingleColumn && (
+          <div
+            className="editor-resize"
+            role="separator"
+            aria-orientation="vertical"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              resizingRef.current = true;
+            }}
+          />
+        )}
+
+        <aside
+          className="editor-sidebar"
+          style={!isSingleColumn ? { width: clampedSidebar } : undefined}
+        >
           <section className="editor-card editor-services">
             <button
               type="button"
