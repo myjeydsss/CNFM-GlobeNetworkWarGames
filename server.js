@@ -23,6 +23,10 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
 
+console.log(
+  `[config] DB host=${MYSQL_HOST} user=${MYSQL_USER} db=${MYSQL_DATABASE}`
+);
+
 /* ------------------------------ Middleware ------------------------------ */
 app.use(
   cors({
@@ -1125,6 +1129,57 @@ app.post(
       console.error("admin create site error:", err);
       const status = err.statusCode || 500;
       res.status(status).json({ message: err.message || "db_error" });
+    }
+  }
+);
+
+// PUT /api/admin/site/:siteId : update site metadata (name/code)
+app.put(
+  "/api/admin/site/:siteId",
+  authRequired,
+  requireRole("site_admin"),
+  async (req, res) => {
+    const siteId = Number(req.params.siteId);
+    const { name, code } = req.body || {};
+    const safeName = typeof name === "string" ? name.trim() : "";
+    const safeCode = typeof code === "string" ? code.trim().toUpperCase() : "";
+    if (!siteId) {
+      return res.status(400).json({ message: "invalid_site_id" });
+    }
+    if (!safeName || !safeCode) {
+      return res.status(400).json({ message: "name_and_code_required" });
+    }
+    if (!(await ensureSiteAccess(req, res, siteId))) return;
+
+    try {
+      // Enforce unique code when changing
+      const [existing] = await query(
+        "SELECT id FROM site WHERE code = ? AND id <> ? LIMIT 1",
+        [safeCode, siteId]
+      );
+      if (existing) {
+        return res.status(409).json({ message: "Site code already exists" });
+      }
+
+      await query(
+        `UPDATE site
+            SET name = ?, code = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?`,
+        [safeName, safeCode, siteId]
+      );
+      const [updated] = await query(
+        `SELECT s.id, s.code, s.name, r.code AS regionCode
+           FROM site s
+           LEFT JOIN region r ON r.id = s.region_id
+          WHERE s.id = ? LIMIT 1`,
+        [siteId]
+      );
+      res.json(
+        updated || { id: siteId, name: safeName, code: safeCode, regionCode: null }
+      );
+    } catch (err) {
+      console.error("admin update site error:", err);
+      res.status(500).json({ message: "db_error" });
     }
   }
 );

@@ -10,10 +10,10 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
-  MiniMap,
   Node,
   Edge,
   ReactFlowInstance,
+  getRectOfNodes,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Swal from "sweetalert2";
@@ -34,6 +34,7 @@ import {
   hasSharedLoadTechnology,
   normalizeLoadLabel,
 } from "../../utils/loadMatching";
+import { resolveInitialTheme, applyThemeVars } from "../../components/Sidebar";
 
 const DEFAULT_EDGE_STYLE = { strokeWidth: 4, stroke: "#2563eb" };
 const STRUCTURAL_EDGE_STYLE = {
@@ -269,10 +270,7 @@ function findAlternatives(
       for (const b of conn.load) {
         const normB = normalizeLoadLabel(b);
         if (!normB) continue;
-        if (
-          normA === normB ||
-          hasSharedLoadTechnology(normA, normB)
-        ) {
+        if (normA === normB || hasSharedLoadTechnology(normA, normB)) {
           if (!seenMatches.has(normB)) {
             seenMatches.add(normB);
             matching.push(b);
@@ -568,11 +566,15 @@ export default function AdminTopologyViewer({
   onSiteChange,
   mode = "admin",
 }: ViewerProps = {}) {
-  const currentUser = useMemo(() => loadUser(), []);
+  const [currentUser, setCurrentUser] = useState(() => loadUser());
   const isAdminMode = mode === "admin";
   const isSuperAdmin = currentUser?.role === "super_admin";
+  const isGuest =
+    !currentUser || !currentUser.role || currentUser.role === "guest";
+  const showGuestIcons = isGuest;
   const [siteOptions, setSiteOptions] = useState<SiteSummary[]>([]);
-  const allowSitePicker = isAdminMode && (isSuperAdmin || siteOptions.length > 1);
+  const allowSitePicker =
+    isAdminMode && (isSuperAdmin || siteOptions.length > 1);
   const [selectedSiteCode, setSelectedSiteCode] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<SiteTopology | null>(null);
   const [flow, setFlow] = useState<FlowBundle>({ nodes: [], edges: [] });
@@ -585,17 +587,15 @@ export default function AdminTopologyViewer({
   const [offline, setOffline] = useState<Set<string>>(new Set());
   const [altLookup, setAltLookup] = useState<Record<string, AltMap>>({});
   const [hover, setHover] = useState<HoverState>(null);
-  const [showMiniMap, setShowMiniMap] = useState(true);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const resetBtnRef = useRef<HTMLButtonElement | null>(null);
   const normalizedInitial = initialSiteCode?.trim().toUpperCase();
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [activeTheme, setActiveTheme] = useState<"light" | "dark">(() => {
-    if (typeof document !== "undefined") {
-      return document.body.classList.contains("theme-light") ? "light" : "dark";
-    }
-    return "dark";
-  });
+  const [activeTheme, setActiveTheme] = useState<"light" | "dark">(
+    resolveInitialTheme
+  );
+  // track previous role to reset guest theme after logout
+  const previousRole = useRef<string | null>(currentUser?.role || null);
   const selectedSiteOption = useMemo(
     () => siteOptions.find((site) => site.code === selectedSiteCode) ?? null,
     [siteOptions, selectedSiteCode]
@@ -625,6 +625,10 @@ export default function AdminTopologyViewer({
         : "CNFM • Published Topology";
   }, [mode]);
 
+  useLayoutEffect(() => {
+    applyThemeVars(activeTheme);
+  }, [activeTheme]);
+
   useEffect(() => {
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<"light" | "dark">).detail;
@@ -635,6 +639,42 @@ export default function AdminTopologyViewer({
     window.addEventListener("cnfm-theme-change", handler);
     return () => window.removeEventListener("cnfm-theme-change", handler);
   }, []);
+
+  // keep auth state in sync (login/logout without reload)
+  useEffect(() => {
+    const syncUser = () => setCurrentUser(loadUser());
+    const storageHandler = (event: StorageEvent) => {
+      if (event.key === "cnfm_user" || event.key === "cnfm_token") {
+        syncUser();
+      }
+    };
+    window.addEventListener("cnfm-auth-changed", syncUser as EventListener);
+    window.addEventListener("storage", storageHandler);
+    return () => {
+      window.removeEventListener(
+        "cnfm-auth-changed",
+        syncUser as EventListener
+      );
+      window.removeEventListener("storage", storageHandler);
+    };
+  }, []);
+
+  // When transitioning from an authenticated role to guest, reset to the
+  // default guest theme to avoid mixed states without forcing guests who
+  // already toggled their theme.
+  useEffect(() => {
+    const wasGuest =
+      previousRole.current === "guest" || previousRole.current === null;
+    if (isGuest && !wasGuest) {
+      localStorage.removeItem("cnfm_theme");
+      setActiveTheme("light");
+      applyThemeVars("light");
+    } else if (!isGuest && wasGuest && activeTheme) {
+      // ensure admin modes honor saved or current theme; if none, use resolve
+      applyThemeVars(activeTheme);
+    }
+    previousRole.current = currentUser?.role || "guest";
+  }, [isGuest, currentUser, activeTheme]);
 
   useEffect(() => {
     (async () => {
@@ -663,12 +703,9 @@ export default function AdminTopologyViewer({
         }
       } catch (err) {
         console.error("site list error:", err);
-        await Swal.fire({
-          icon: "error",
-          title: "Load failed",
-          text: "Unable to load site list.",
-          confirmButtonColor: "#ef4444",
-        });
+        setSiteOptions([]);
+        setSelectedSiteCode("");
+        setError("Unable to load site list.");
       }
     })();
   }, [normalizedInitial, fetchSiteSummaries, isAdminMode, isSuperAdmin]);
@@ -761,15 +798,6 @@ export default function AdminTopologyViewer({
         } else {
           setFlow(buildFlowFromLive(topo));
         }
-
-        setTimeout(() => {
-          if (cancelled) return;
-          try {
-            reactFlowInstance?.fitView({ padding: 0.2, duration: 320 });
-          } catch {
-            /* ignore */
-          }
-        }, 80);
       } catch (err: any) {
         console.error("topology fetch error:", err);
         if (!cancelled) {
@@ -793,6 +821,34 @@ export default function AdminTopologyViewer({
       cancelled = true;
     };
   }, [selectedSiteCode, siteOptions, reactFlowInstance]);
+
+  // Fit view whenever a site is loaded and nodes are present
+  useEffect(() => {
+    if (!reactFlowInstance) return;
+    if (!flow.nodes.length) return;
+    const id = requestAnimationFrame(() => {
+      try {
+        const bounds = getRectOfNodes(flow.nodes);
+        const hasSize =
+          Number.isFinite(bounds.width) &&
+          Number.isFinite(bounds.height) &&
+          bounds.width > 0 &&
+          bounds.height > 0;
+        const padding = 0.04;
+        if (hasSize) {
+          reactFlowInstance.fitBounds(bounds, {
+            padding,
+            duration: 500,
+          });
+        } else {
+          reactFlowInstance.fitView({ padding, duration: 500 });
+        }
+      } catch (err) {
+        console.error("fit view error:", err);
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [reactFlowInstance, flow.nodes, flow.edges, selectedSiteCode]);
 
   useEffect(() => {
     if (!selectedSite) {
@@ -851,19 +907,18 @@ export default function AdminTopologyViewer({
     return ids;
   }, [flow.edges]);
 
-  const dynamicConnectionKeys = useMemo(() => {
-    if (!selectedSite) return [] as string[];
-    const keys = selectedSite.connections
-      .filter((conn) => conn.load && conn.load.length)
-      .map((conn) => conn.key);
-    return keys.filter((key) => flow.edges.some((edge) => edge.id === key));
-  }, [selectedSite, flow.edges]);
+  const toggleableEdgeKeys = useMemo(() => {
+    // All non-structural edges currently rendered
+    return flow.edges
+      .filter((edge) => !(edge.data as any)?.structural)
+      .map((edge) => edge.id);
+  }, [flow.edges]);
 
   const allOffline = useMemo(
     () =>
-      dynamicConnectionKeys.length > 0 &&
-      offline.size === dynamicConnectionKeys.length,
-    [dynamicConnectionKeys, offline]
+      toggleableEdgeKeys.length > 0 &&
+      offline.size === toggleableEdgeKeys.length,
+    [toggleableEdgeKeys, offline]
   );
 
   const computeRelativePosition = useCallback(
@@ -909,24 +964,11 @@ export default function AdminTopologyViewer({
     [structuralEdgeIds]
   );
 
-  const handleResetAll = useCallback(() => {
-    setOffline(new Set());
-    setAltLookup({});
-    setHover(null);
-    if (resetBtnRef.current) {
-      resetBtnRef.current.focus();
-      window.setTimeout(() => resetBtnRef.current?.blur(), 320);
-    }
-  }, []);
-
   const handleSetAllOffline = useCallback(() => {
-    if (!dynamicConnectionKeys.length) return;
-    if (allOffline) {
-      setOffline(new Set());
-    } else {
-      setOffline(new Set(dynamicConnectionKeys));
-    }
-  }, [dynamicConnectionKeys, allOffline]);
+    if (!toggleableEdgeKeys.length) return;
+    const next = allOffline ? new Set<string>() : new Set(toggleableEdgeKeys);
+    setOffline(next);
+  }, [toggleableEdgeKeys, allOffline]);
 
   const offlineCards = useMemo(() => {
     if (!selectedSite)
@@ -1223,12 +1265,19 @@ export default function AdminTopologyViewer({
   }, [hover, connectionsByKey, offline, altLookup]);
   const headerEyebrow = isPublicMode
     ? "Globe Network WarGames"
-    : "Published Network";
-  const headerTitle = "Network Route Analysis";
-  const headerSubtitle = isPublicMode
-    ? "Select a site from the sidebar to explore its published topology and simulate outages."
-    : "Browse published layouts for each site. Draft edits remain in the builder until you publish them.";
+    : "Published Topology";
   const needsSiteSelection = isAdminMode && !selectedSiteCode;
+  const handleToggleTheme = useCallback(() => {
+    const next = activeTheme === "dark" ? "light" : "dark";
+    applyThemeVars(next);
+    setActiveTheme(next);
+  }, [activeTheme]);
+
+  const handleOpenLogin = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cnfm-open-login"));
+    }
+  }, []);
 
   return (
     <div
@@ -1237,99 +1286,147 @@ export default function AdminTopologyViewer({
       }`}
     >
       <header className="viewer-header">
-        <div>
-          <p className="viewer-eyebrow">{headerEyebrow}</p>
-          <h1>{headerTitle}</h1>
-          <p className="viewer-tagline">{headerSubtitle}</p>
-          {isPublicMode && (
-            <div
-              className={`viewer-site-chip ${currentSiteMeta ? "" : "empty"}`}
+        <div className="viewer-header-top">
+          <div className="viewer-eyebrow-stack">
+            <img
+              src="/CNFM%20Logo.png"
+              alt="CNFM"
+              className="viewer-logo"
+              width={32}
+              height={32}
+            />
+            <p
+              className={`viewer-eyebrow ${
+                isGuest || isPublicMode ? "accent" : ""
+              }`}
             >
-              {currentSiteMeta ? (
-                <>
-                  <span className="name">{currentSiteMeta.name}</span>
-                  <span className="separator" aria-hidden="true">
-                    ◦
-                  </span>
-                  <span className="region">{currentSiteMeta.region}</span>
-                </>
-              ) : (
-                <span className="placeholder">
-                  Choose a site from the sidebar
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        <div className={`viewer-actions ${isPublicMode ? "public" : "admin"}`}>
-          {isAdminMode ? (
-            allowSitePicker ? (
+              {headerEyebrow}
+            </p>
+          </div>
+          <div className="viewer-top-actions">
+            {showGuestIcons ? (
               <>
                 <button
                   type="button"
-                  className="viewer-select-btn viewer-btn ghost"
-                  onClick={() => allowSitePicker && setPickerOpen(true)}
-                  disabled={!siteOptions.length || loading}
-                  aria-haspopup="dialog"
-                  aria-expanded={pickerOpen}
+                  className="viewer-icon-btn"
+                  onClick={handleToggleTheme}
+                  aria-label={
+                    activeTheme === "dark"
+                      ? "Switch to light mode"
+                      : "Switch to dark mode"
+                  }
                 >
-                  <span className="viewer-select-label">
-                    {selectedSiteCode && selectedSiteOption
-                      ? `${selectedSiteOption.name} · ${
-                          selectedSiteOption.regionName ||
-                          selectedSiteOption.regionCode
-                        }`
-                      : "Select site…"}
-                  </span>
-                  <span className="viewer-select-caret" aria-hidden="true">
-                    ▾
-                  </span>
-                </button>
-                <div className="viewer-status-group">
-                  {loading && <span className="viewer-status">Loading…</span>}
-                  {error && (
-                    <span className="viewer-status error">{error}</span>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="viewer-summary-stack">
-                <div className="editor-site-summary-card">
-                  <p className="editor-site-label">Assigned site</p>
-                  {selectedSiteOption ? (
-                    <p className="editor-site-summary">
-                      <span className="code">{selectedSiteOption.name}</span>
-                      <span className="separator" aria-hidden>
-                        •
-                      </span>
-                      <span className="region">
-                        {selectedSiteOption.regionName ||
-                          selectedSiteOption.regionCode ||
-                          "Unassigned region"}
-                      </span>
-                    </p>
+                  {activeTheme === "dark" ? (
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm5 7a5 5 0 1 1-10 0 5 5 0 0 1 10 0Zm-5 8a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1Zm-8-8a1 1 0 0 1 1-1H6a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm15 0a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1Zm-2.95-5.95a1 1 0 0 1 1.41 0l.71.71a1 1 0 0 1-1.41 1.42l-.71-.72a1 1 0 0 1 0-1.41ZM6.54 17.46a1 1 0 0 1 1.41 0l.72.71a1 1 0 1 1-1.42 1.41l-.71-.71a1 1 0 0 1 0-1.41Zm0-12.92.71.72a1 1 0 0 1-1.41 1.41l-.71-.71a1 1 0 1 1 1.41-1.42ZM17.46 17.46l.71.71a1 1 0 1 1-1.41 1.41l-.72-.71a1 1 0 1 1 1.42-1.41Z"
+                        fill="currentColor"
+                      />
+                    </svg>
                   ) : (
-                    <p className="editor-site-hint">
-                      No site has been assigned to your account yet.
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="viewer-icon-btn"
+                  onClick={handleOpenLogin}
+                  aria-label="Open login"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M11 3a1 1 0 0 0-1 1v3h2V5h8v14h-8v-2h-2v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H11Zm1.7 5.3-1.4 1.4L13.58 12H3v2h10.59l-2.29 2.29 1.4 1.42L18.4 12l-5.7-5.7Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </>
+            ) : isAdminMode ? (
+              allowSitePicker ? (
+                <>
+                  <button
+                    type="button"
+                    className="viewer-select-btn viewer-btn ghost"
+                    onClick={() => allowSitePicker && setPickerOpen(true)}
+                    disabled={!siteOptions.length || loading}
+                    aria-haspopup="dialog"
+                    aria-expanded={pickerOpen}
+                  >
+                    <span className="viewer-select-label">
+                      {selectedSiteCode && selectedSiteOption
+                        ? `${selectedSiteOption.name} · ${
+                            selectedSiteOption.regionName ||
+                            selectedSiteOption.regionCode
+                          }`
+                        : "Select Site to View"}
+                    </span>
+                    <span className="viewer-select-caret" aria-hidden="true">
+                      ▾
+                    </span>
+                  </button>
+                  <div className="viewer-status-group compact">
+                    {loading && <span className="viewer-status">Loading…</span>}
+                    {error && (
+                      <span className="viewer-status error">{error}</span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="viewer-summary-stack inline">
+                  <div className="editor-site-summary-card inline-summary">
+                    <p className="editor-site-summary inline">
+                      <span className="editor-site-label-inline">
+                        Assigned site:
+                      </span>
+                      {selectedSiteOption ? (
+                        <>
+                          <span className="code">
+                            {selectedSiteOption.name}
+                          </span>
+                          <span className="separator" aria-hidden>
+                            •
+                          </span>
+                          <span className="region">
+                            {selectedSiteOption.regionName ||
+                              selectedSiteOption.regionCode ||
+                              "Unassigned region"}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="region">Unassigned</span>
+                      )}
                     </p>
-                  )}
+                  </div>
+                  <div className="viewer-status-group compact">
+                    {loading && <span className="viewer-status">Loading…</span>}
+                    {error && (
+                      <span className="viewer-status error">{error}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="viewer-status-group">
-                  {loading && <span className="viewer-status">Loading…</span>}
-                  {error && (
-                    <span className="viewer-status error">{error}</span>
-                  )}
-                </div>
-              </div>
-            )
-          ) : (
-            (loading || error) && (
-              <div className="viewer-status-group">
-                {loading && <span className="viewer-status">Loading…</span>}
-                {error && <span className="viewer-status error">{error}</span>}
-              </div>
-            )
-          )}
+              )
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -1346,26 +1443,12 @@ export default function AdminTopologyViewer({
             </div>
             <div className="viewer-toolbar-actions">
               <button
-                className={`viewer-btn ghost mini-map-toggle ${
-                  showMiniMap ? "" : "inactive"
-                }`}
-                onClick={() => setShowMiniMap((prev) => !prev)}
-              >
-                {showMiniMap ? "Hide Mini Map" : "Show Mini Map"}
-              </button>
-              <button
                 ref={resetBtnRef}
-                className="viewer-btn primary"
-                onClick={handleResetAll}
-              >
-                Reset All to Online
-              </button>
-              <button
-                className="viewer-btn ghost"
+                className="viewer-btn viewer-toggle-pill"
                 onClick={handleSetAllOffline}
-                disabled={!dynamicConnectionKeys.length}
+                disabled={!toggleableEdgeKeys.length}
               >
-                {allOffline ? "Clear Offline" : "Set All Offline"}
+                {allOffline ? "Reset All to Online" : "Set All Offline"}
               </button>
             </div>
           </div>
@@ -1390,7 +1473,6 @@ export default function AdminTopologyViewer({
               size={1}
               color={gridColor}
             />
-            {showMiniMap && <MiniMap pannable className="viewer-minimap" />}
             <Controls showInteractive={false} className="viewer-controls" />
           </ReactFlow>
           {hover && hoverDetails && (

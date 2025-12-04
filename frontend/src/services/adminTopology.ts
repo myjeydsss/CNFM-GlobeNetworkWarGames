@@ -113,6 +113,27 @@ export async function createAdminSite(input: {
   };
 }
 
+export async function updateAdminSite(
+  siteId: number,
+  input: { name: string; code: string }
+) {
+  const res = await authFetch(`/api/admin/site/${siteId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message || "site_update_failed");
+  }
+  return (await res.json()) as {
+    id: number;
+    code: string;
+    name: string;
+    regionCode: string;
+  };
+}
+
 export type SiteService = {
   id: number;
   siteId: number;

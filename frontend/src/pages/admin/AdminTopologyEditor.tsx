@@ -10,7 +10,6 @@ import ReactFlow, {
   Controls,
   Edge,
   EdgeChange,
-  MiniMap,
   Node,
   NodeChange,
   ReactFlowInstance,
@@ -280,25 +279,6 @@ function IconBlock() {
         rx="2"
         stroke="currentColor"
         strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
-
-function IconMapMini() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 7.5 9 5l6 2.5 5-2.5v13l-5 2.5-6-2.5-5 2.5v-13Z"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9 5v13M15 7.5v13"
-        stroke="currentColor"
-        strokeWidth="1.4"
       />
     </svg>
   );
@@ -669,7 +649,8 @@ export default function AdminTopologyEditor() {
   const handleEdgeHover = useCallback(
     ({ id, type }: { id: string; type: "enter" | "move" | "leave" }) => {
       if (type === "enter") setHoveredEdgeId(id);
-      if (type === "leave") setHoveredEdgeId((prev) => (prev === id ? null : prev));
+      if (type === "leave")
+        setHoveredEdgeId((prev) => (prev === id ? null : prev));
     },
     []
   );
@@ -701,7 +682,9 @@ export default function AdminTopologyEditor() {
             ...baseStyle,
             stroke: edge.structural ? "#94a3b8" : "#38bdf8",
             strokeWidth:
-              typeof baseWidth === "number" ? baseWidth + 1 : baseStyle?.strokeWidth,
+              typeof baseWidth === "number"
+                ? baseWidth + 1
+                : baseStyle?.strokeWidth,
             filter: "drop-shadow(0 0 0.45rem rgba(56,189,248,.5))",
           }
         : baseStyle;
@@ -737,7 +720,7 @@ export default function AdminTopologyEditor() {
           labelT: typeof edge.labelT === "number" ? edge.labelT : 0.5,
           labelOffset: edge.labelOffset ?? { x: 0, y: 0 },
           onLabelPositionChange: handleLabelPositionChange,
-           onHoverChange: handleEdgeHover,
+          onHoverChange: handleEdgeHover,
         },
       } as ViewEdge;
     });
@@ -766,7 +749,6 @@ export default function AdminTopologyEditor() {
     name: "",
     regionCode: "",
   });
-  const [miniMapVisible, setMiniMapVisible] = useState(true);
   const [sitePickerOpen, setSitePickerOpen] = useState(false);
   const [expandedRegions, setExpandedRegions] = useState<
     Record<string, boolean>
@@ -1646,6 +1628,9 @@ export default function AdminTopologyEditor() {
     selection?.type === "node"
       ? nodes.find((n) => n.id === selection.id) || null
       : null;
+  const selectedNodeKind = selectedNode
+    ? (nodeData(selectedNode)?.kind as string | undefined) || "node"
+    : "node";
   const selectedEdge =
     selection?.type === "edge"
       ? baseEdges.find((edge) => edge.id === selection.id) || null
@@ -1683,6 +1668,18 @@ export default function AdminTopologyEditor() {
               : node
           )
         );
+        if (selectedNodeKind === "core") {
+          setCurrentSiteMeta((prev) =>
+            prev ? { ...prev, name: value } : prev
+          );
+          setSiteOptions((opts) =>
+            opts.map((opt) =>
+              opt.code === selection.id
+                ? { ...opt, name: value || opt.name }
+                : opt
+            )
+          );
+        }
         setDirty(true);
         return;
       }
@@ -1710,7 +1707,60 @@ export default function AdminTopologyEditor() {
         setDirty(true);
       }
     },
-    [selection, selectedEdge, setNodes]
+    [selection, selectedEdge, setNodes, selectedNodeKind]
+  );
+
+  const commitSiteName = useCallback(
+    (value: string) => {
+      if (!currentSiteMeta) return;
+      const trimmedName = value.trim();
+      const trimmedCode = trimmedName.toUpperCase();
+      if (!trimmedName) return;
+
+      const oldCode = currentSiteMeta.code;
+      const newCode = trimmedCode;
+
+      setCurrentSiteMeta((prev) =>
+        prev ? { ...prev, name: trimmedName, code: newCode } : prev
+      );
+      setSiteOptions((opts) =>
+        opts.map((opt) =>
+          opt.code === oldCode ? { ...opt, name: trimmedName, code: newCode } : opt
+        )
+      );
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === oldCode
+            ? {
+                ...node,
+                id: newCode,
+                data: { ...(nodeData(node) ?? {}), label: trimmedName },
+              }
+            : node
+        )
+      );
+      setBaseEdges((edges) =>
+        edges.map((edge) => {
+          let changed = false;
+          const next: any = { ...edge };
+          if (edge.source === oldCode) {
+            next.source = newCode;
+            changed = true;
+          }
+          if (edge.target === oldCode) {
+            next.target = newCode;
+            changed = true;
+          }
+          return changed ? next : edge;
+        })
+      );
+      if (selection?.type === "node" && selection.id === oldCode) {
+        setSelection({ type: "node", id: newCode });
+      }
+      setSelectedSiteCode(newCode);
+      setDirty(true);
+    },
+    [currentSiteMeta, selection, setNodes, setBaseEdges]
   );
 
   const handleAddLoad = useCallback(() => {
@@ -2023,60 +2073,48 @@ export default function AdminTopologyEditor() {
     <div className={`topology-editor-shell ${connecting ? "connecting" : ""}`}>
       <header className="editor-header">
         <div className="editor-heading">
-          <p className="editor-eyebrow">Admin Tools</p>
-          <h1>Topology Builder</h1>
-          <p className="editor-tagline">
-            Drag nodes, connect links, and annotate pill loads. Add standalone
-            blocks for infrastructure labels and save drafts before publishing.
-          </p>
+          <img
+            src="/CNFM%20Logo.png"
+            alt="CNFM"
+            className="editor-logo"
+            width={32}
+            height={32}
+          />
+          <p className="editor-eyebrow accent">Topology Builder</p>
         </div>
-        <div className="editor-site-controls">
+        <div className="editor-site-controls inline">
           {isSuperAdmin || (visibleSiteOptions.length > 1 && !isSuperAdmin) ? (
             <button
               type="button"
-              className="editor-site-button"
+              className="editor-site-button capsule compact viewer-select-btn"
               onClick={() => setSitePickerOpen(true)}
               disabled={siteListLoading && !visibleSiteOptions.length}
             >
-              <div className="editor-site-button-text">
-                <span className="title">
-                  {selectedSiteOption ? selectedSiteOption.name : "Select site"}
-                </span>
-                <span className="meta">
-                  {selectedSiteOption
-                    ? selectedSiteOption.regionName ||
-                      selectedSiteOption.regionCode
-                    : siteListLoading
-                    ? "Loading sites…"
-                    : isSuperAdmin
-                    ? "Choose a site to load topology"
-                    : "Select from your assigned sites"}
-                </span>
-              </div>
+              <span className="title">
+                {selectedSiteOption
+                  ? selectedSiteOption.name
+                  : "Select Site Here"}
+              </span>
               <span className="editor-site-button-caret" aria-hidden="true">
                 ▾
               </span>
             </button>
           ) : (
-            <div className="editor-site-summary-card">
-              <p className="editor-site-label">Assigned site</p>
-              {selectedSiteOption ? (
-                <p className="editor-site-summary">
-                  <span className="code">{selectedSiteOption.name}</span>
-                  <span className="separator" aria-hidden>
-                    •
-                  </span>
-                  <span className="region">
-                    {selectedSiteOption.regionName ||
-                      selectedSiteOption.regionCode ||
-                      "Unassigned region"}
-                  </span>
-                </p>
-              ) : (
-                <p className="editor-site-hint">
-                  No site has been assigned to your account yet.
-                </p>
-              )}
+            <div className="editor-assigned-pill">
+              <span className="label">Assigned site:</span>
+              <span className="code">
+                {selectedSiteOption ? selectedSiteOption.name : "Unassigned"}
+              </span>
+              <span className="separator" aria-hidden>
+                •
+              </span>
+              <span className="region">
+                {selectedSiteOption
+                  ? selectedSiteOption.regionName ||
+                    selectedSiteOption.regionCode ||
+                    "Unassigned region"
+                  : "No region"}
+              </span>
             </div>
           )}
           {statusMessages.length > 0 && (
@@ -2171,17 +2209,6 @@ export default function AdminTopologyEditor() {
             </span>
             <span>Standalone block</span>
           </button>
-          <button
-            type="button"
-            className="editor-btn secondary"
-            onClick={() => setMiniMapVisible((prev) => !prev)}
-            disabled={!selectedSiteCode}
-          >
-            <span className="btn-icon">
-              <IconMapMini />
-            </span>
-            <span>{miniMapVisible ? "Hide mini map" : "Show mini map"}</span>
-          </button>
         </div>
         <div className="toolbar-divider" aria-hidden />
         <div className="toolbar-group">
@@ -2207,7 +2234,9 @@ export default function AdminTopologyEditor() {
             <span className="btn-icon">
               <IconSave />
             </span>
-            <span>{saving ? "Saving…" : dirty ? "Save draft" : "Draft saved"}</span>
+            <span>
+              {saving ? "Saving…" : dirty ? "Save draft" : "Draft saved"}
+            </span>
           </button>
           <button
             type="button"
@@ -2318,7 +2347,6 @@ export default function AdminTopologyEditor() {
             onReconnect={handleReconnect}
             onReconnectEnd={handleReconnectEnd}
           >
-            {miniMapVisible && <MiniMap pannable zoomable />}
             <Controls showInteractive={false} />
             <Background
               id="cnfm-grid"
@@ -2524,7 +2552,9 @@ export default function AdminTopologyEditor() {
                     <h3>{inspectorTitle}</h3>
                     <p>
                       Adjust the node label to update how it appears in the
-                      topology canvas.
+                      topology canvas. For the core site node, label updates
+                      also update the site name/code for the draft; it will be
+                      persisted when you save or publish.
                     </p>
                   </div>
                   <label className="detail-field">
@@ -2533,6 +2563,11 @@ export default function AdminTopologyEditor() {
                       type="text"
                       value={labelInput}
                       onChange={(e) => handleLabelInputChange(e.target.value)}
+                      onBlur={() => {
+                        if (selectedNodeKind === "core") {
+                          commitSiteName(labelInput);
+                        }
+                      }}
                     />
                   </label>
                 </>
@@ -2850,7 +2885,9 @@ export default function AdminTopologyEditor() {
                 return (
                   <section
                     key={group.code}
-                    className={`site-picker-section ${isOpen ? "open" : "closed"}`}
+                    className={`site-picker-section ${
+                      isOpen ? "open" : "closed"
+                    }`}
                   >
                     <button
                       type="button"
@@ -2895,7 +2932,9 @@ export default function AdminTopologyEditor() {
                               <span className="site-meta">
                                 {site.code}
                                 {selectedSiteCode === site.code ? (
-                                  <span className="site-selected">Selected</span>
+                                  <span className="site-selected">
+                                    Selected
+                                  </span>
                                 ) : null}
                               </span>
                             </button>

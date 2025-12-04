@@ -3,6 +3,7 @@ import AdminSidebar from "../../components/admin/AdminSidebar";
 import "../../components/admin/AdminSidebar.css";
 import { useEffect } from "react";
 import { clearAuth, loadUser } from "../../services/auth";
+import { applyThemeVars } from "../Sidebar";
 
 export default function AdminLayout() {
   const user = loadUser();
@@ -13,6 +14,10 @@ export default function AdminLayout() {
     // clean up legacy keys from prior builds
     localStorage.removeItem("auth_token");
     localStorage.removeItem("auth_user");
+    // reset theme to guest default (light) to avoid mixed state after logout
+    localStorage.removeItem("cnfm_theme");
+    applyThemeVars("light");
+    window.dispatchEvent(new Event("cnfm-auth-changed"));
   };
 
   // Set a sane default offset for the admin shell (in case CSS var not set yet)

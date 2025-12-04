@@ -28,7 +28,7 @@ const REGIONS: RegionCfg[] = [
   },
 ];
 
-function resolveInitialTheme(): "light" | "dark" {
+export function resolveInitialTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "dark";
   const saved = localStorage.getItem("cnfm_theme");
   if (saved === "light" || saved === "dark") return saved;
@@ -37,7 +37,7 @@ function resolveInitialTheme(): "light" | "dark" {
     : "dark";
 }
 
-function applyThemeVars(theme: "light" | "dark") {
+export function applyThemeVars(theme: "light" | "dark") {
   if (typeof document === "undefined") return;
   const body = document.body;
   body.classList.remove("theme-light", "theme-dark");
@@ -87,6 +87,109 @@ function applyThemeVars(theme: "light" | "dark") {
       "0 16px 28px rgba(15,23,42,.08)"
     );
     root.style.setProperty("--viewer-btn-ghost-text", "#0f172a");
+    // Admin/Viewer extended tokens (light)
+    root.style.setProperty("--editor-bg", "#f8fafc");
+    root.style.setProperty("--editor-text", "#0f172a");
+    root.style.setProperty("--editor-muted", "#475569");
+    root.style.setProperty("--editor-subtext", "#334155");
+    root.style.setProperty("--editor-panel", "#ffffff");
+    root.style.setProperty("--editor-panel-strong", "#e2e8f0");
+    root.style.setProperty("--editor-border", "rgba(148,163,184,.35)");
+    root.style.setProperty("--editor-accent", "#2563eb");
+    root.style.setProperty("--editor-accent-alt", "#1d4ed8");
+    root.style.setProperty("--editor-status-color", "#94a3b8");
+    root.style.setProperty("--editor-canvas-border", "rgba(59,130,246,.2)");
+    root.style.setProperty(
+      "--editor-canvas-shadow",
+      "0 12px 28px rgba(15,23,42,.12)"
+    );
+    root.style.setProperty("--editor-btn-shadow", "0 8px 18px rgba(0,0,0,.08)");
+    root.style.setProperty(
+      "--editor-btn-shadow-hover",
+      "0 12px 28px rgba(0,0,0,.12)"
+    );
+    root.style.setProperty(
+      "--editor-btn-shadow-active",
+      "0 6px 16px rgba(0,0,0,.1)"
+    );
+    root.style.setProperty("--editor-form-bg", "#ffffff");
+    root.style.setProperty("--editor-form-border", "rgba(148,163,184,.35)");
+    root.style.setProperty("--editor-form-text", "#0f172a");
+    root.style.setProperty("--editor-detail-muted", "#475569");
+    root.style.setProperty("--editor-detail-empty", "#475569");
+    root.style.setProperty(
+      "--editor-empty-bg",
+      "linear-gradient(180deg, rgba(241,245,249,.8), rgba(241,245,249,.6))"
+    );
+    root.style.setProperty("--editor-empty-text", "#475569");
+    root.style.setProperty("--editor-empty-border", "rgba(148,163,184,.35)");
+    root.style.setProperty("--editor-empty-panel", "#ffffff");
+    root.style.setProperty(
+      "--editor-empty-shadow",
+      "0 20px 40px rgba(15,23,42,.12)"
+    );
+    root.style.setProperty("--viewer-card-bg", "#ffffff");
+    root.style.setProperty("--viewer-card-border", "rgba(226,232,240,.9)");
+    root.style.setProperty("--viewer-card-title", "#b91c1c");
+    root.style.setProperty("--viewer-card-text", "#1f2937");
+    root.style.setProperty("--viewer-card-sub", "#475569");
+    root.style.setProperty("--viewer-card-alt", "#047857");
+    root.style.setProperty("--viewer-card-alt-text", "#14532d");
+    root.style.setProperty("--viewer-tooltip-bg", "#ffffff");
+    root.style.setProperty("--viewer-tooltip-border", "rgba(203,213,225,.8)");
+    root.style.setProperty("--viewer-tooltip-text", "#1f2937");
+    root.style.setProperty("--viewer-tooltip-label", "#475569");
+    root.style.setProperty("--viewer-tooltip-status-good", "#15803d");
+    root.style.setProperty("--viewer-tooltip-status-bad", "#b91c1c");
+    root.style.setProperty("--viewer-hover-border-on", "#0f766e");
+    root.style.setProperty("--viewer-hover-border-off", "#b91c1c");
+    root.style.setProperty("--viewer-hover-good-bg", "rgba(16,185,129,.12)");
+    root.style.setProperty("--viewer-hover-bad-bg", "rgba(220,38,38,.12)");
+    root.style.setProperty("--viewer-edge-normal", "#2563eb");
+    root.style.setProperty("--viewer-edge-normal-soft", "#60a5fa");
+    root.style.setProperty("--viewer-edge-alt", "#10b981");
+    root.style.setProperty("--viewer-edge-alt-soft", "#34d399");
+    root.style.setProperty("--viewer-edge-offline", "#dc2626");
+    root.style.setProperty("--viewer-edge-offline-soft", "#f87171");
+    root.style.setProperty("--viewer-edge-structural", "rgba(148,163,184,.45)");
+    root.style.setProperty("--viewer-edge-glow", "rgba(37,99,235,.25)");
+    root.style.setProperty("--viewer-edge-glow-alt", "rgba(16,185,129,.28)");
+    root.style.setProperty(
+      "--viewer-edge-glow-offline",
+      "rgba(220,38,38,.28)"
+    );
+    root.style.setProperty("--viewer-edge-label-bg", "#fde68a");
+    root.style.setProperty("--viewer-edge-label-border", "#f59e0b");
+    root.style.setProperty("--viewer-edge-label-text", "#1f2937");
+    root.style.setProperty("--viewer-edge-label-alt-bg", "#bbf7d0");
+    root.style.setProperty("--viewer-edge-label-alt-border", "#0f766e");
+    root.style.setProperty("--viewer-edge-label-alt-text", "#14532d");
+    root.style.setProperty("--viewer-edge-label-offline-bg", "#fecdd3");
+    root.style.setProperty("--viewer-edge-label-offline-border", "#fb7185");
+    root.style.setProperty("--viewer-edge-label-offline-text", "#7f1d1d");
+    root.style.setProperty(
+      "--viewer-edge-label-structural-bg",
+      "rgba(148,163,184,.18)"
+    );
+    root.style.setProperty(
+      "--viewer-edge-label-structural-border",
+      "rgba(148,163,184,.45)"
+    );
+    root.style.setProperty("--viewer-edge-label-structural-text", "#475569");
+    root.style.setProperty("--asb-bg", "#ffffff");
+    root.style.setProperty("--asb-fg", "#1e293b");
+    root.style.setProperty("--asb-fg-dim", "#64748b");
+    root.style.setProperty("--asb-accent", "#2563eb");
+    root.style.setProperty("--asb-active", "#1d4ed8");
+    root.style.setProperty("--asb-hover-bg", "rgba(148,163,184,.12)");
+    root.style.setProperty("--asb-hover-border", "rgba(148,163,184,.22)");
+    root.style.setProperty("--asb-active-bg", "rgba(37,99,235,.12)");
+    root.style.setProperty("--asb-active-border", "rgba(37,99,235,.36)");
+    root.style.setProperty("--asb-card-bg", "rgba(148,163,184,.12)");
+    root.style.setProperty("--asb-card-border", "rgba(148,163,184,.25)");
+    root.style.setProperty("--admin-shell-bg", "#f8fafc");
+    root.style.setProperty("--admin-shell-text", "#0f172a");
+    root.style.setProperty("--admin-shell-border", "rgba(148,163,184,.35)");
   } else {
     root.style.setProperty("--sb-bg", "rgba(7,12,22,.95)");
     root.style.setProperty("--sb-fg", "#e2e8f0");
@@ -127,6 +230,115 @@ function applyThemeVars(theme: "light" | "dark") {
       "inset 0 0 0 1px rgba(59,130,246,.08), 0 10px 24px rgba(7,12,22,.4)"
     );
     root.style.setProperty("--viewer-btn-ghost-text", "rgba(191,219,254,.85)");
+    // Admin/Viewer extended tokens (dark)
+    root.style.setProperty("--editor-bg", "#0b1220");
+    root.style.setProperty("--editor-text", "#e2e8f0");
+    root.style.setProperty("--editor-muted", "rgba(148,163,184,.7)");
+    root.style.setProperty("--editor-subtext", "rgba(191,219,254,.82)");
+    root.style.setProperty("--editor-panel", "rgba(15,23,42,.72)");
+    root.style.setProperty("--editor-panel-strong", "rgba(8,13,23,.82)");
+    root.style.setProperty("--editor-border", "rgba(148,163,184,.25)");
+    root.style.setProperty("--editor-accent", "#2563eb");
+    root.style.setProperty("--editor-accent-alt", "#1d4ed8");
+    root.style.setProperty("--editor-status-color", "rgba(148,163,184,.6)");
+    root.style.setProperty("--editor-canvas-border", "rgba(59,130,246,.25)");
+    root.style.setProperty(
+      "--editor-canvas-shadow",
+      "0 30px 60px rgba(7,11,19,.6)"
+    );
+    root.style.setProperty(
+      "--editor-btn-shadow",
+      "0 8px 18px rgba(37,99,235,.15)"
+    );
+    root.style.setProperty(
+      "--editor-btn-shadow-hover",
+      "0 12px 28px rgba(37,99,235,.2)"
+    );
+    root.style.setProperty(
+      "--editor-btn-shadow-active",
+      "0 6px 16px rgba(37,99,235,.18)"
+    );
+    root.style.setProperty("--editor-form-bg", "rgba(7,12,22,.85)");
+    root.style.setProperty("--editor-form-border", "rgba(148,163,184,.3)");
+    root.style.setProperty("--editor-form-text", "#e2e8f0");
+    root.style.setProperty("--editor-detail-muted", "rgba(148,163,184,.8)");
+    root.style.setProperty("--editor-detail-empty", "rgba(148,163,184,.75)");
+    root.style.setProperty(
+      "--editor-empty-bg",
+      "linear-gradient(180deg, rgba(7,12,22,.78), rgba(7,12,22,.64))"
+    );
+    root.style.setProperty("--editor-empty-text", "rgba(191,219,254,.75)");
+    root.style.setProperty("--editor-empty-border", "rgba(59,130,246,.28)");
+    root.style.setProperty("--editor-empty-panel", "rgba(8,13,23,.82)");
+    root.style.setProperty(
+      "--editor-empty-shadow",
+      "0 20px 40px rgba(7,11,19,.45)"
+    );
+    root.style.setProperty("--viewer-card-bg", "rgba(10,16,27,.8)");
+    root.style.setProperty("--viewer-card-border", "rgba(79,70,229,.25)");
+    root.style.setProperty("--viewer-card-title", "#fca5a5");
+    root.style.setProperty("--viewer-card-text", "rgba(191,219,254,.9)");
+    root.style.setProperty("--viewer-card-sub", "rgba(226,232,240,.8)");
+    root.style.setProperty("--viewer-card-alt", "#34d399");
+    root.style.setProperty("--viewer-card-alt-text", "rgba(226,232,240,.82)");
+    root.style.setProperty("--viewer-tooltip-bg", "rgba(15,23,42,.95)");
+    root.style.setProperty("--viewer-tooltip-border", "rgba(148,163,184,.35)");
+    root.style.setProperty("--viewer-tooltip-text", "rgba(226,232,240,.85)");
+    root.style.setProperty("--viewer-tooltip-label", "rgba(148,163,184,.75)");
+    root.style.setProperty("--viewer-tooltip-status-good", "#4ade80");
+    root.style.setProperty("--viewer-tooltip-status-bad", "#fca5a5");
+    root.style.setProperty("--viewer-hover-border-on", "#22c55e");
+    root.style.setProperty("--viewer-hover-border-off", "#f87171");
+    root.style.setProperty("--viewer-hover-good-bg", "rgba(34,197,94,.14)");
+    root.style.setProperty("--viewer-hover-bad-bg", "rgba(248,113,113,.2)");
+    root.style.setProperty("--viewer-edge-normal", "#60a5fa");
+    root.style.setProperty("--viewer-edge-normal-soft", "#2563eb");
+    root.style.setProperty("--viewer-edge-alt", "#34d399");
+    root.style.setProperty("--viewer-edge-alt-soft", "#4ade80");
+    root.style.setProperty("--viewer-edge-offline", "#f87171");
+    root.style.setProperty("--viewer-edge-offline-soft", "#fca5a5");
+    root.style.setProperty("--viewer-edge-structural", "rgba(148,163,184,.45)");
+    root.style.setProperty("--viewer-edge-glow", "rgba(96,165,250,.35)");
+    root.style.setProperty("--viewer-edge-glow-alt", "rgba(52,211,153,.35)");
+    root.style.setProperty(
+      "--viewer-edge-glow-offline",
+      "rgba(248,113,113,.45)"
+    );
+    root.style.setProperty("--viewer-edge-label-bg", "#facc15");
+    root.style.setProperty("--viewer-edge-label-border", "#b45309");
+    root.style.setProperty("--viewer-edge-label-text", "#1f2937");
+    root.style.setProperty("--viewer-edge-label-alt-bg", "#34d399");
+    root.style.setProperty("--viewer-edge-label-alt-border", "#166534");
+    root.style.setProperty("--viewer-edge-label-alt-text", "#022c22");
+    root.style.setProperty("--viewer-edge-label-offline-bg", "#f87171");
+    root.style.setProperty("--viewer-edge-label-offline-border", "#991b1b");
+    root.style.setProperty("--viewer-edge-label-offline-text", "#fff5f5");
+    root.style.setProperty(
+      "--viewer-edge-label-structural-bg",
+      "rgba(148,163,184,.15)"
+    );
+    root.style.setProperty(
+      "--viewer-edge-label-structural-border",
+      "rgba(148,163,184,.4)"
+    );
+    root.style.setProperty("--viewer-edge-label-structural-text", "#e2e8f0");
+    root.style.setProperty("--asb-bg", "#0b1220");
+    root.style.setProperty("--asb-fg", "#cbd5e1");
+    root.style.setProperty("--asb-fg-dim", "#94a3b8");
+    root.style.setProperty("--asb-accent", "#60a5fa");
+    root.style.setProperty("--asb-active", "#1d4ed8");
+    root.style.setProperty("--asb-hover-bg", "rgba(255,255,255,.06)");
+    root.style.setProperty("--asb-hover-border", "rgba(255,255,255,.08)");
+    root.style.setProperty("--asb-active-bg", "rgba(96,165,250,.12)");
+    root.style.setProperty("--asb-active-border", "rgba(96,165,250,.35)");
+    root.style.setProperty("--asb-card-bg", "rgba(255,255,255,.05)");
+    root.style.setProperty("--asb-card-border", "rgba(255,255,255,.06)");
+    root.style.setProperty(
+      "--admin-shell-bg",
+      "radial-gradient(circle at top left, rgba(59,130,246,.18), transparent 60%), #071426"
+    );
+    root.style.setProperty("--admin-shell-text", "#e2e8f0");
+    root.style.setProperty("--admin-shell-border", "rgba(37,99,235,.35)");
   }
   if (typeof window !== "undefined") {
     window.dispatchEvent(

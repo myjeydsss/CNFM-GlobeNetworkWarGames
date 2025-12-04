@@ -613,6 +613,10 @@ export default function AdminSidebar({ user, onLogout }: Props) {
     if (res.isConfirmed) {
       onLogout?.();
       navigate("/", { replace: true });
+      if (typeof window !== "undefined") {
+        // ensure all theme and data state are fully reset after logout
+        setTimeout(() => window.location.reload(), 50);
+      }
     }
   };
 
