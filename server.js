@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 5266;
 const MYSQL_HOST = process.env.MYSQL_HOST || "localhost";
 const MYSQL_USER = process.env.MYSQL_USER || "root";
 const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD || "";
-const MYSQL_DATABASE = process.env.MYSQL_DATABASE || "cnfm_wargames";
+const MYSQL_DATABASE = process.env.MYSQL_DATABASE || "cnfm_topology";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -189,7 +189,9 @@ async function getAccessibleSiteIds(user) {
 async function fetchUsersWithSites(userIds) {
   const idList =
     Array.isArray(userIds) && userIds.length
-      ? Array.from(new Set(userIds.map((id) => Number(id)).filter((id) => id > 0)))
+      ? Array.from(
+          new Set(userIds.map((id) => Number(id)).filter((id) => id > 0))
+        )
       : null;
 
   let userSql = `
@@ -219,7 +221,7 @@ async function fetchUsersWithSites(userIds) {
       FROM site_admins sa
       INNER JOIN site s ON s.id = sa.site_id
       LEFT JOIN region r ON r.id = s.region_id
-     WHERE sa.revoked_at IS NULL
+     WHERE sa.revoked_at IS NULL 
   `;
   let assignmentParams = [];
   if (idList) {
@@ -404,7 +406,9 @@ app.put("/api/auth/password", authRequired, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body || {};
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "current_and_new_password_required" });
+      return res
+        .status(400)
+        .json({ message: "current_and_new_password_required" });
     }
     if (String(newPassword).length < 10) {
       return res.status(400).json({ message: "new_password_too_short" });
@@ -423,7 +427,10 @@ app.put("/api/auth/password", authRequired, async (req, res) => {
       return res.status(404).json({ message: "user_not_found" });
     }
     const dbUser = rows[0];
-    const matches = await bcrypt.compare(String(currentPassword), String(dbUser.password));
+    const matches = await bcrypt.compare(
+      String(currentPassword),
+      String(dbUser.password)
+    );
     if (!matches) {
       return res.status(400).json({ message: "incorrect_current_password" });
     }
@@ -454,8 +461,7 @@ app.put("/api/auth/profile", authRequired, async (req, res) => {
   try {
     const userId = req.user?.sub;
     const { firstname, lastname, username } = req.body || {};
-    const safeFirstname =
-      typeof firstname === "string" ? firstname.trim() : "";
+    const safeFirstname = typeof firstname === "string" ? firstname.trim() : "";
     const safeLastname = typeof lastname === "string" ? lastname.trim() : "";
     const safeUsername = typeof username === "string" ? username.trim() : "";
 
@@ -545,7 +551,8 @@ app.get("/api/region/:code/site", async (req, res) => {
 
 app.get("/api/region/:code/published-site", async (req, res) => {
   const regionCode = String(req.params.code || "").toUpperCase();
-  if (!regionCode) return res.status(400).json({ message: "invalid_region_code" });
+  if (!regionCode)
+    return res.status(400).json({ message: "invalid_region_code" });
 
   try {
     const rows = await query(
@@ -1133,57 +1140,6 @@ app.post(
   }
 );
 
-// PUT /api/admin/site/:siteId : update site metadata (name/code)
-app.put(
-  "/api/admin/site/:siteId",
-  authRequired,
-  requireRole("site_admin"),
-  async (req, res) => {
-    const siteId = Number(req.params.siteId);
-    const { name, code } = req.body || {};
-    const safeName = typeof name === "string" ? name.trim() : "";
-    const safeCode = typeof code === "string" ? code.trim().toUpperCase() : "";
-    if (!siteId) {
-      return res.status(400).json({ message: "invalid_site_id" });
-    }
-    if (!safeName || !safeCode) {
-      return res.status(400).json({ message: "name_and_code_required" });
-    }
-    if (!(await ensureSiteAccess(req, res, siteId))) return;
-
-    try {
-      // Enforce unique code when changing
-      const [existing] = await query(
-        "SELECT id FROM site WHERE code = ? AND id <> ? LIMIT 1",
-        [safeCode, siteId]
-      );
-      if (existing) {
-        return res.status(409).json({ message: "Site code already exists" });
-      }
-
-      await query(
-        `UPDATE site
-            SET name = ?, code = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?`,
-        [safeName, safeCode, siteId]
-      );
-      const [updated] = await query(
-        `SELECT s.id, s.code, s.name, r.code AS regionCode
-           FROM site s
-           LEFT JOIN region r ON r.id = s.region_id
-          WHERE s.id = ? LIMIT 1`,
-        [siteId]
-      );
-      res.json(
-        updated || { id: siteId, name: safeName, code: safeCode, regionCode: null }
-      );
-    } catch (err) {
-      console.error("admin update site error:", err);
-      res.status(500).json({ message: "db_error" });
-    }
-  }
-);
-
 // Ensure supporting table exists:
 // CREATE TABLE topologydraft (
 //   site_id INT PRIMARY KEY,
@@ -1444,7 +1400,9 @@ app.put(
             [
               siteId,
               String(node.id || ""),
-              typeof node.label === "string" ? node.label : String(node.id || ""),
+              typeof node.label === "string"
+                ? node.label
+                : String(node.id || ""),
               type,
               Number(entry.x || 0),
               Number(entry.y || 0),
@@ -1469,7 +1427,7 @@ app.put(
           const insert = await txQuery(
             `INSERT INTO link
                (site_id, linkkey, displayname, fromnode, tonode)
-             VALUES (?, ?, ?, ?, ?)` ,
+             VALUES (?, ?, ?, ?, ?)`,
             [
               siteId,
               String(edge.id || `edge-${Date.now()}`),
@@ -1494,9 +1452,9 @@ app.put(
           const sy = Number(src.y || 0) + Number(src.height || 60) / 2;
           const tx = Number(tgt.x || 0) + Number(tgt.width || 150) / 2;
           const ty = Number(tgt.y || 0) + Number(tgt.height || 60) / 2;
-          const path = `M ${sx.toFixed(2)} ${sy.toFixed(
+          const path = `M ${sx.toFixed(2)} ${sy.toFixed(2)} L ${tx.toFixed(
             2
-          )} L ${tx.toFixed(2)} ${ty.toFixed(2)}`;
+          )} ${ty.toFixed(2)}`;
 
           const meta = JSON.stringify({
             type:
@@ -1642,12 +1600,9 @@ app.post(
       siteIds = [],
     } = req.body || {};
 
-    const safeFirstname =
-      typeof firstname === "string" ? firstname.trim() : "";
-    const safeLastname =
-      typeof lastname === "string" ? lastname.trim() : "";
-    const safeUsername =
-      typeof username === "string" ? username.trim() : "";
+    const safeFirstname = typeof firstname === "string" ? firstname.trim() : "";
+    const safeLastname = typeof lastname === "string" ? lastname.trim() : "";
+    const safeUsername = typeof username === "string" ? username.trim() : "";
 
     if (!safeUsername) {
       return res.status(400).json({ message: "Username is required." });
@@ -1689,7 +1644,7 @@ app.post(
 
         const insert = await connQuery(
           `INSERT INTO users (firstname, lastname, username, password, role, status, must_change_password)
-           VALUES (?, ?, ?, ?, 'site_admin', 'active', 1)` ,
+           VALUES (?, ?, ?, ?, 'site_admin', 'active', 1)`,
           [safeFirstname, safeLastname, safeUsername, hashed]
         );
         const newUserId = insert.insertId;
@@ -1776,9 +1731,7 @@ app.put(
         [safeUsername, userId]
       );
       if (dup.length) {
-        return res
-          .status(409)
-          .json({ message: "Username is already taken." });
+        return res.status(409).json({ message: "Username is already taken." });
       }
 
       await query(
@@ -1875,7 +1828,12 @@ app.put(
             .join(",");
           const params = [];
           siteIds.forEach((siteId, idx) => {
-            params.push(siteId, userId, req.user?.sub ?? null, idx === 0 ? 1 : 0);
+            params.push(
+              siteId,
+              userId,
+              req.user?.sub ?? null,
+              idx === 0 ? 1 : 0
+            );
           });
           await connQuery(
             `INSERT INTO site_admins (site_id, user_id, assigned_by, is_primary, assigned_at, revoked_at)
@@ -1992,12 +1950,9 @@ app.post(
       return res.status(400).json({ message: "invalid_site_id" });
     }
     if (!(await ensureSiteAccess(req, res, siteId))) return;
-    const trimmedName =
-      typeof name === "string" ? name.trim() : "";
+    const trimmedName = typeof name === "string" ? name.trim() : "";
     if (!trimmedName) {
-      return res
-        .status(400)
-        .json({ message: "Service name is required." });
+      return res.status(400).json({ message: "Service name is required." });
     }
     const order =
       typeof sortOrder === "number" && Number.isFinite(sortOrder)
@@ -2007,10 +1962,9 @@ app.post(
         : 0;
 
     try {
-      const [site] = await query(
-        "SELECT id FROM site WHERE id = ? LIMIT 1",
-        [siteId]
-      );
+      const [site] = await query("SELECT id FROM site WHERE id = ? LIMIT 1", [
+        siteId,
+      ]);
       if (!site) {
         return res.status(404).json({ message: "site_not_found" });
       }
@@ -2052,8 +2006,7 @@ app.put(
       return res.status(400).json({ message: "invalid_service_id" });
     }
 
-    const trimmedName =
-      typeof name === "string" ? name.trim() : "";
+    const trimmedName = typeof name === "string" ? name.trim() : "";
     const hasName = trimmedName.length > 0;
     const order =
       typeof sortOrder === "number" && Number.isFinite(sortOrder)
